@@ -1,0 +1,42 @@
+# The build context is the repo root (see docker-compose.yml), so everything
+# not needed at runtime has to be excluded explicitly or it ships in the image.
+
+.git/
+.gitignore
+.dockerignore
+
+# Python
+.venv/
+venv/
+env/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Secrets — compose passes these via env_file at run time, never baked in.
+.env
+
+# Frontend: built and hosted by Firebase, not by any of the three services.
+web/
+node_modules/
+**/node_modules/
+dist/
+
+# Pitch assets, including backup_demo.mp4.
+deck/
+
+# Docs and per-service tests.
+BRAIN.md
+README.md
+**/tests/
+
+# Runtime state written by ground's local datastore fallback.
+ground/.localdb/
+
+# ICAR source PDFs feed brain/services/ingest.py, which is a one-off run
+# locally. The image needs the ChromaDB store it produced (brain/data/chroma/),
+# not the ~30 PDFs it was built from.
+brain/data/icar_pdfs/
+
+.DS_Store

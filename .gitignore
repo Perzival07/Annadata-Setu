@@ -12,3 +12,6 @@ brain/data/chroma/*
 !brain/data/chroma/.gitkeep
 brain/data/icar_pdfs/*
 !brain/data/icar_pdfs/.gitkeep
+.claude/*
+
+ground/.localdb/

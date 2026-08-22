@@ -1,1 +1,338 @@
-[]
+[
+  {
+    "plot_id": "plot_silent_ring_1",
+    "farmer_phone": "919876501000",
+    "lat": 19.8975,
+    "lon": 73.83,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_2",
+    "farmer_phone": "919876501001",
+    "lat": 20.0655,
+    "lon": 73.9042,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_3",
+    "farmer_phone": "919876501002",
+    "lat": 20.0555,
+    "lon": 73.7446,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_4",
+    "farmer_phone": "919876501003",
+    "lat": 19.9799,
+    "lon": 73.6884,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_5",
+    "farmer_phone": "919876501004",
+    "lat": 20.0267,
+    "lon": 73.7011,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_6",
+    "farmer_phone": "919876501005",
+    "lat": 20.0201,
+    "lon": 73.7736,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_7",
+    "farmer_phone": "919876501006",
+    "lat": 20.0043,
+    "lon": 73.7154,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_8",
+    "farmer_phone": "919876501007",
+    "lat": 19.9881,
+    "lon": 73.798,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_9",
+    "farmer_phone": "919876501008",
+    "lat": 20.01,
+    "lon": 73.7741,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_10",
+    "farmer_phone": "919876501009",
+    "lat": 19.97,
+    "lon": 73.7038,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_11",
+    "farmer_phone": "919876501010",
+    "lat": 20.0524,
+    "lon": 73.7941,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_12",
+    "farmer_phone": "919876501011",
+    "lat": 19.9269,
+    "lon": 73.8185,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_13",
+    "farmer_phone": "919876501012",
+    "lat": 19.9015,
+    "lon": 73.9061,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_14",
+    "farmer_phone": "919876501013",
+    "lat": 20.078,
+    "lon": 73.751,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_15",
+    "farmer_phone": "919876501014",
+    "lat": 19.9398,
+    "lon": 73.8555,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_16",
+    "farmer_phone": "919876501015",
+    "lat": 19.9315,
+    "lon": 73.84,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_17",
+    "farmer_phone": "919876501016",
+    "lat": 19.9107,
+    "lon": 73.8744,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_18",
+    "farmer_phone": "919876501017",
+    "lat": 20.1,
+    "lon": 73.8226,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_19",
+    "farmer_phone": "919876501018",
+    "lat": 20.0437,
+    "lon": 73.7195,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_20",
+    "farmer_phone": "919876501019",
+    "lat": 19.9928,
+    "lon": 73.8326,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_21",
+    "farmer_phone": "919876501020",
+    "lat": 19.9522,
+    "lon": 73.7734,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_22",
+    "farmer_phone": "919876501021",
+    "lat": 20.0817,
+    "lon": 73.7297,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_23",
+    "farmer_phone": "919876501022",
+    "lat": 20.1147,
+    "lon": 73.898,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_24",
+    "farmer_phone": "919876501023",
+    "lat": 20.0912,
+    "lon": 73.8874,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_25",
+    "farmer_phone": "919876501024",
+    "lat": 19.9955,
+    "lon": 73.7327,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_26",
+    "farmer_phone": "919876501025",
+    "lat": 19.9076,
+    "lon": 73.6788,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_27",
+    "farmer_phone": "919876501026",
+    "lat": 19.8831,
+    "lon": 73.8541,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_28",
+    "farmer_phone": "919876501027",
+    "lat": 19.9386,
+    "lon": 73.744,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_29",
+    "farmer_phone": "919876501028",
+    "lat": 20.0231,
+    "lon": 73.7166,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_30",
+    "farmer_phone": "919876501029",
+    "lat": 19.9934,
+    "lon": 73.6845,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_31",
+    "farmer_phone": "919876501030",
+    "lat": 19.9617,
+    "lon": 73.6835,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_32",
+    "farmer_phone": "919876501031",
+    "lat": 20.0491,
+    "lon": 73.6749,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_33",
+    "farmer_phone": "919876501032",
+    "lat": 19.961,
+    "lon": 73.7368,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_34",
+    "farmer_phone": "919876501033",
+    "lat": 20.0045,
+    "lon": 73.7041,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_35",
+    "farmer_phone": "919876501034",
+    "lat": 19.9224,
+    "lon": 73.9001,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_36",
+    "farmer_phone": "919876501035",
+    "lat": 20.0035,
+    "lon": 73.7956,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_37",
+    "farmer_phone": "919876501036",
+    "lat": 20.081,
+    "lon": 73.859,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_38",
+    "farmer_phone": "919876501037",
+    "lat": 19.9629,
+    "lon": 73.7284,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_39",
+    "farmer_phone": "919876501038",
+    "lat": 19.9274,
+    "lon": 73.7455,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_40",
+    "farmer_phone": "919876501039",
+    "lat": 20.0393,
+    "lon": 73.8371,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_41",
+    "farmer_phone": "919876501040",
+    "lat": 19.8898,
+    "lon": 73.7537,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  },
+  {
+    "plot_id": "plot_silent_ring_42",
+    "farmer_phone": "919876501041",
+    "lat": 19.9961,
+    "lon": 73.7908,
+    "district": "Nashik",
+    "inferred_crop": "Tomato"
+  }
+]

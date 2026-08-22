@@ -1,8 +1,14 @@
 version: '3.8'
 
+# Every service builds from the REPO ROOT so that contracts/ — the shared,
+# frozen package all three import — lands inside the image. Scoping the context
+# to a service folder makes `from contracts.models import ...` unresolvable.
+
 services:
   channel:
-    build: ./channel
+    build:
+      context: .
+      dockerfile: channel/Dockerfile
     ports:
       - "8001:8001"
     environment:
@@ -14,7 +20,9 @@ services:
       - .env
 
   brain:
-    build: ./brain
+    build:
+      context: .
+      dockerfile: brain/Dockerfile
     ports:
       - "8002:8002"
     environment:
@@ -25,11 +33,18 @@ services:
       - .env
 
   ground:
-    build: ./ground
+    build:
+      context: .
+      dockerfile: ground/Dockerfile
     ports:
       - "8003:8003"
     environment:
       - PORT=8003
       - MOCK_MODE=true
+      # ground is the leaf service and calls nobody, so MOCK_MODE is inert here.
+      # Local compose runs have no GCP credentials: pin the datastore to the
+      # local store rather than waiting on a credential lookup that will fail.
+      # Cloud Run leaves this unset and gets real Firestore.
+      - FORCE_LOCAL_DB=true
     env_file:
       - .env
