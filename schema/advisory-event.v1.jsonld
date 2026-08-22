@@ -1,0 +1,5 @@
+{
+  "@context": "https://schema.org",
+  "@type": "AdvisoryEvent",
+  "version": "1.0"
+}

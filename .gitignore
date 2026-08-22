@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.env
+node_modules/
+dist/
+.DS_Store
+brain/data/chroma/*
+!brain/data/chroma/.gitkeep
+brain/data/icar_pdfs/*
+!brain/data/icar_pdfs/.gitkeep
