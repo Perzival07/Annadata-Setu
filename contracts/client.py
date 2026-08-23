@@ -46,3 +46,20 @@ async def get_nearby_outbreaks(lat: float, lon: float) -> list[Outbreak]:
         res = await client.get(f"{GROUND_URL}/outbreaks/nearby", params={"lat": lat, "lon": lon})
         res.raise_for_status()
         return [Outbreak(**item) for item in res.json()]
+
+
+async def compose_marathi_script(diagnosis: Diagnosis, passport: PlotPassport | None = None) -> str | None:
+    """Ask brain for the spoken Marathi advisory.
+
+    Returns None when unavailable — the caller must then use its own
+    Marathi-only template rather than speaking a part-English script.
+    """
+    if MOCK:
+        return None
+    payload = {"diagnosis": diagnosis.model_dump()}
+    if passport:
+        payload["passport"] = passport.model_dump()
+    async with httpx.AsyncClient(timeout=20.0) as client:
+        res = await client.post(f"{BRAIN_URL}/advisory-script", json=payload)
+        res.raise_for_status()
+        return res.json().get("script")

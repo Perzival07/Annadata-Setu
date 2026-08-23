@@ -133,3 +133,28 @@ async def diagnose(req: DiagnoseRequest, background_tasks: BackgroundTasks):
     background_tasks.add_task(post_observation_telemetry, passport, diagnosis)
 
     return diagnosis
+
+
+class AdvisoryScriptRequest(BaseModel):
+    diagnosis: Diagnosis
+    passport: Optional[PlotPassport] = None
+
+
+class AdvisoryScriptResponse(BaseModel):
+    script: Optional[str] = None
+    language: str = "mr"
+    generated_by: str  # "gemini" | "unavailable"
+
+
+@router.post("/advisory-script", response_model=AdvisoryScriptResponse)
+async def advisory_script(req: AdvisoryScriptRequest):
+    """Spoken Marathi advisory, generated rather than translated (BRAIN.md §11).
+
+    Returns script=None when generation is unavailable, so the caller falls back
+    to its own Marathi-only template instead of speaking something wrong.
+    """
+    script = await gemini_service.compose_marathi_script(req.diagnosis, req.passport)
+    return AdvisoryScriptResponse(
+        script=script,
+        generated_by="gemini" if script else "unavailable",
+    )

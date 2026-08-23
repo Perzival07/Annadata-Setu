@@ -1,5 +1,12 @@
 import logging
 from contracts.models import Diagnosis
+from channel.services.marathi import (
+    disease_in_marathi,
+    dosage_in_marathi,
+    has_latin_script,
+    strip_to_speakable,
+    to_devanagari_digits,
+)
 
 logger = logging.getLogger("channel.composer")
 
@@ -60,10 +67,18 @@ class AdvisoryComposerService:
         ])
 
     def compose_marathi_script(self, diagnosis: Diagnosis) -> str:
-        """Compose a direct 4-sentence Marathi spoken voice note script."""
-        disease = diagnosis.disease_name
-        cost = diagnosis.estimated_cost_inr
+        """Marathi-only spoken script.
 
+        This is the FALLBACK. The primary path asks brain to generate Marathi
+        directly (BRAIN.md §11, 15:30) — see pipeline.py. This template runs when
+        brain is unreachable, and its one hard requirement is that nothing Latin
+        reaches the mr-IN voice: the previous version interpolated the English
+        disease_name, action_text and dosage straight in, so ~45% of the spoken
+        script was English read aloud by a Marathi voice.
+
+        Where a value cannot be rendered in Marathi it is omitted. The WhatsApp
+        text message still carries the precise English name and dose.
+        """
         if diagnosis.escalate_to_human:
             return (
                 "नमस्कार. तुमचा फोटो आम्हाला नीट तपासता आला नाही. "
@@ -72,18 +87,36 @@ class AdvisoryComposerService:
                 "शक्य असल्यास दिवसाच्या उजेडात पानाचा स्पष्ट फोटो पुन्हा पाठवा."
             )
 
+        disease_mr = disease_in_marathi(diagnosis.disease_name)
+        # No safe Marathi rendering: name the symptom generically rather than
+        # speaking an English disease name mid-sentence.
+        subject = f"{disease_mr} दिसत आहे" if disease_mr else "रोगाची लक्षणे दिसत आहेत"
+        cost_mr = to_devanagari_digits(str(diagnosis.estimated_cost_inr or 0))
+
         if not diagnosis.is_action_needed:
+            saved = to_devanagari_digits(str(diagnosis.estimated_cost_inr or 500))
             return (
-                f"नमस्कार. तुमच्या पिकावर {disease} ची लक्षणे दिसत आहेत. "
-                f"ही हवामानातील बदलामुळे झालेली पोषण कमतरता आहे. "
-                f"कोणतीही रासायनिक फवारणी करण्याची गरज नाही. यामुळे तुमचे ₹{cost or 500} वाचतील."
+                f"नमस्कार. तुमच्या पिकावर {subject}. "
+                "ही रोगाची लागण नसून अन्नद्रव्यांची कमतरता आहे. "
+                "त्यामुळे कोणतीही रासायनिक फवारणी करण्याची गरज नाही. "
+                f"यामुळे तुमचे अंदाजे ₹{saved} वाचतील."
             )
 
-        dosage_str = f" १ लिटर पाण्यात {diagnosis.dosage} मिसळून फवारणी करा." if diagnosis.dosage else ""
-        return (
-            f"नमस्कार. तुमच्या पिकावर {disease} चा प्रादुर्भाव झाला आहे. "
-            f"{diagnosis.action_text}.{dosage_str} "
-            f"याचा अंदाजे खर्च ₹{cost} येईल. फवारणी पुढील {diagnosis.urgency_hours} तासांत पूर्ण करा."
+        dosage_mr = dosage_in_marathi(diagnosis.dosage)
+        dose_sentence = (
+            f"{dosage_mr} या प्रमाणात मिसळून फवारणी करा. "
+            if dosage_mr else
+            "औषधाच्या पाकिटावर दिलेल्या प्रमाणानुसार फवारणी करा. "
         )
+        hours_mr = to_devanagari_digits(str(diagnosis.urgency_hours or 24))
+        script = (
+            f"नमस्कार. तुमच्या पिकावर {subject}. "
+            "हवामानातील आर्द्रतेमुळे याचा प्रसार वेगाने होऊ शकतो. "
+            f"{dose_sentence}"
+            f"याचा अंदाजे खर्च ₹{cost_mr} येईल आणि ही फवारणी पुढील {hours_mr} तासांत पूर्ण करा."
+        )
+        # Belt and braces: nothing Latin may reach the voice engine.
+        return strip_to_speakable(script) if has_latin_script(script) else script
+
 
 composer_service = AdvisoryComposerService()

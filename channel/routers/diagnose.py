@@ -8,7 +8,11 @@ from contracts.client import get_plot_passport, diagnose_leaf
 from contracts.fallbacks import unavailable_diagnosis
 from channel.services.composer import composer_service
 from channel.services.tts import tts_service
-from channel.services.pipeline import _resolve_passport, _resolve_diagnosis as _pipeline_diagnosis
+from channel.services.pipeline import (
+    _resolve_passport,
+    _resolve_diagnosis as _pipeline_diagnosis,
+    resolve_marathi_script,
+)
 
 logger = logging.getLogger("channel.router.diagnose")
 
@@ -42,7 +46,7 @@ async def pwa_diagnose(req: PWADiagnoseRequest):
 
     # 3. Compose text and voice script
     formatted_text = composer_service.compose_text_advisory(diagnosis)
-    marathi_script = composer_service.compose_marathi_script(diagnosis)
+    marathi_script = await resolve_marathi_script(diagnosis, passport)
 
     return PWADiagnoseResponse(
         diagnosis=diagnosis,

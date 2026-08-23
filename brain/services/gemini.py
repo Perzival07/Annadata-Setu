@@ -1,8 +1,11 @@
 import os
+import re
 import json
 import asyncio
 import logging
 from typing import Dict, List, Optional
+
+from pydantic import BaseModel
 
 from contracts.models import Diagnosis, PlotPassport
 from contracts.mock_data import DIAGNOSIS as MOCK_DIAGNOSIS
@@ -21,7 +24,8 @@ CONFIDENCE_ESCALATION_THRESHOLD = 0.65
 
 
 
-PROMPT_PATH = os.path.join(os.path.dirname(__file__), "..", "prompts", "diagnosis.md")
+PROMPTS_DIR = os.path.join(os.path.dirname(__file__), "..", "prompts")
+PROMPT_PATH = os.path.join(PROMPTS_DIR, "diagnosis.md")
 
 # BRAIN.md §5: the prompt is versioned in prompts/diagnosis.md — "edit here, not
 # in code". It was not actually being read: the runtime instruction was a five
@@ -41,34 +45,55 @@ _FALLBACK_SYSTEM_INSTRUCTION = (
     "If confidence is < 0.65, set escalate_to_human=True."
 )
 
-_system_instruction_cache: Optional[str] = None
+_prompt_cache: Dict[str, str] = {}
 
 
-def load_system_instruction() -> str:
-    """Read the versioned prompt, falling back to an equivalent inline copy.
+class MarathiScript(BaseModel):
+    """Schema-locked wrapper. BRAIN.md §7 requires a response schema on every
+    Gemini call — we take a structured field, never regex over prose."""
+    script: str
 
-    Only the prose above the `---` separator is sent: what follows it documents
-    the JSON context this service injects programmatically, and feeding that
-    template back to the model would just be noise.
+
+_FALLBACK_MARATHI_INSTRUCTION = (
+    "Convert the structured Diagnosis into a spoken Marathi advisory for a smallholder farmer.\n"
+    "Four short sentences: what the crop has, why (weather/stage), what to do, cost and urgency.\n"
+    "Write ONLY in Marathi (Devanagari). Do not use any English words or Latin script — the text is "
+    "read aloud by a Marathi voice and Latin script is mispronounced. Translate disease names into "
+    "Marathi, and write numbers in Devanagari digits.\n"
+    "If escalate_to_human is true, say the photo could not be assessed, tell them clearly NOT to "
+    "spray, and that an expert will review it. Never state a dose in that case."
+)
+
+
+def load_prompt(filename: str, fallback: str) -> str:
+    """Read a versioned prompt from brain/prompts/, falling back to an inline copy.
+
+    Only the prose above the `---` separator is sent: what follows documents the
+    JSON context this service injects programmatically.
     """
-    global _system_instruction_cache
-    if _system_instruction_cache is not None:
-        return _system_instruction_cache
+    if filename in _prompt_cache:
+        return _prompt_cache[filename]
 
+    path = os.path.abspath(os.path.join(PROMPTS_DIR, filename))
     try:
-        with open(os.path.abspath(PROMPT_PATH), "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             text = f.read()
         instruction = text.split("\n---", 1)[0].strip()
         if not instruction:
-            raise ValueError("prompt file has no system instruction section")
-        logger.info(f"Loaded diagnosis system instruction from {PROMPT_PATH} ({len(instruction)} chars).")
+            raise ValueError("prompt file has no instruction section")
+        logger.info(f"Loaded prompt {filename} ({len(instruction)} chars).")
     except Exception as e:
         # Never leave the model unprompted (BRAIN.md §9: fallbacks are mandatory).
-        logger.warning(f"Could not read {PROMPT_PATH}, using inline fallback prompt: {e}")
-        instruction = _FALLBACK_SYSTEM_INSTRUCTION
+        logger.warning(f"Could not read {path}, using inline fallback: {e}")
+        instruction = fallback
 
-    _system_instruction_cache = instruction
+    _prompt_cache[filename] = instruction
     return instruction
+
+
+def load_system_instruction() -> str:
+    return load_prompt("diagnosis.md", _FALLBACK_SYSTEM_INSTRUCTION)
+
 
 
 class GeminiService:
@@ -201,5 +226,67 @@ class GeminiService:
             # into the Diagnosis schema. All of them mean "we do not know".
             logger.error(f"Gemini diagnosis failed, escalating to human: {e}", exc_info=True)
             return unavailable_diagnosis()
+
+    async def compose_marathi_script(
+        self,
+        diagnosis: Diagnosis,
+        passport: Optional[PlotPassport] = None,
+    ) -> Optional[str]:
+        """Generate the spoken Marathi advisory directly (BRAIN.md §11, 15:30).
+
+        Asking the model for Marathi beats translating: the previous approach
+        interpolated English Diagnosis fields into Marathi sentence frames, so
+        the mr-IN voice had to read an English sentence aloud.
+
+        Returns None when generation is unavailable or the result is not usable,
+        so the caller falls back to its own Marathi-only template rather than
+        speaking something wrong.
+        """
+        if MOCK or not self.client:
+            return None
+
+        try:
+            from google.genai import types
+
+            system_instruction = load_prompt("reply_marathi.md", _FALLBACK_MARATHI_INSTRUCTION)
+            context = {
+                "diagnosis": diagnosis.model_dump(),
+                "plot": {
+                    "district": passport.district if passport else None,
+                    "crop": passport.inferred_crop if passport else None,
+                    "crop_stage_days": passport.crop_stage_days if passport else None,
+                    "weather_10d": passport.weather_10d if passport else {},
+                } if passport else {},
+            }
+
+            config = types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.3,
+                response_mime_type="application/json",
+                response_schema=MarathiScript,
+            )
+            response = await asyncio.to_thread(
+                self.client.models.generate_content,
+                model="gemini-2.5-flash",
+                contents=[f"Compose the spoken Marathi advisory for: {json.dumps(context, ensure_ascii=False)}"],
+                config=config,
+            )
+            raw = response.text
+            if not raw:
+                raise ValueError("empty response")
+            script = (json.loads(raw) or {}).get("script", "").strip()
+
+            if not script:
+                raise ValueError("model returned no script")
+            # The whole point is a speakable mr-IN script. If Latin script came
+            # back anyway, reject it rather than hand it to the voice engine.
+            if re.search(r"[A-Za-z]{3,}", script):
+                raise ValueError(f"script still contains Latin script: {script[:80]!r}")
+
+            return script
+        except Exception as e:
+            logger.warning(f"Marathi script generation failed, caller will use its template: {e}")
+            return None
+
 
 gemini_service = GeminiService()
