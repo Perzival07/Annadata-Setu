@@ -1,5 +1,186 @@
 {
-  "@context": "https://schema.org",
-  "@type": "ModelRegistry",
-  "version": "1.0"
+  "@context": {
+    "as": "https://perzival07.github.io/Annadata-Setu/ns/v1#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "geo": "http://www.w3.org/2003/01/geo/wgs84_pos#",
+    "@version": 1.1,
+    "ModelRegistryEntry": "as:ModelRegistryEntry",
+    "model_id": {
+      "@id": "as:modelId",
+      "@type": "xsd:string"
+    },
+    "name": {
+      "@id": "as:name",
+      "@type": "xsd:string"
+    },
+    "base_model": {
+      "@id": "as:baseModel",
+      "@type": "xsd:string"
+    },
+    "state": {
+      "@id": "as:state",
+      "@type": "xsd:string"
+    },
+    "crop": {
+      "@id": "as:crop",
+      "@type": "xsd:string"
+    },
+    "accuracy_f1": {
+      "@id": "as:accuracyF1",
+      "@type": "xsd:double"
+    },
+    "calibration_error": {
+      "@id": "as:calibrationError",
+      "@type": "xsd:double"
+    },
+    "training_dataset": {
+      "@id": "as:trainingDataset",
+      "@type": "xsd:string"
+    },
+    "fork_lineage": {
+      "@id": "as:forkLineage",
+      "@type": "xsd:string",
+      "@container": "@list"
+    },
+    "schema_version": {
+      "@id": "as:schemaVersion",
+      "@type": "xsd:string"
+    },
+    "updated_at": {
+      "@id": "dcterms:modified",
+      "@type": "xsd:dateTime"
+    },
+    "label": "rdfs:label",
+    "comment": "rdfs:comment",
+    "domain": {
+      "@id": "rdfs:domain",
+      "@type": "@id"
+    },
+    "range": {
+      "@id": "rdfs:range",
+      "@type": "@id"
+    },
+    "required": "as:required",
+    "nullable": "as:nullable",
+    "constraint": "as:constraint"
+  },
+  "@id": "https://perzival07.github.io/Annadata-Setu/schema/model-registry.v1.jsonld",
+  "@type": "owl:Ontology",
+  "label": "Model Registry",
+  "comment": "Published model lineage and performance, so another region can fork a model and state exactly what it forked.",
+  "owl:versionInfo": "1.0",
+  "dcterms:license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "dcterms:publisher": "Annadata Setu",
+  "dcterms:modified": "2026-08-23",
+  "@graph": [
+    {
+      "@id": "as:ModelRegistryEntry",
+      "@type": "rdfs:Class",
+      "label": "Model Registry",
+      "comment": "One published model version, its measured performance, and its ancestry."
+    },
+    {
+      "@id": "as:modelId",
+      "@type": "rdf:Property",
+      "label": "model_id",
+      "comment": "Globally unique identifier for this model version.",
+      "domain": "as:ModelRegistryEntry",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:name",
+      "@type": "rdf:Property",
+      "label": "name",
+      "comment": "Human-readable model name.",
+      "domain": "as:ModelRegistryEntry",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:baseModel",
+      "@type": "rdf:Property",
+      "label": "base_model",
+      "comment": "Immediate parent this version was derived from.",
+      "domain": "as:ModelRegistryEntry",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:state",
+      "@type": "rdf:Property",
+      "label": "state",
+      "comment": "Administrative region the model is tuned for.",
+      "domain": "as:ModelRegistryEntry",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:crop",
+      "@type": "rdf:Property",
+      "label": "crop",
+      "comment": "Crop the model is tuned for.",
+      "domain": "as:ModelRegistryEntry",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:accuracyF1",
+      "@type": "rdf:Property",
+      "label": "accuracy_f1",
+      "comment": "F1 score on the named evaluation dataset.",
+      "domain": "as:ModelRegistryEntry",
+      "range": "xsd:double",
+      "required": true
+    },
+    {
+      "@id": "as:calibrationError",
+      "@type": "rdf:Property",
+      "label": "calibration_error",
+      "comment": "Expected calibration error. Published alongside F1 because a confidence threshold governs escalation — a well-ranked but poorly calibrated model escalates the wrong cases.",
+      "domain": "as:ModelRegistryEntry",
+      "range": "xsd:double",
+      "required": true
+    },
+    {
+      "@id": "as:trainingDataset",
+      "@type": "rdf:Property",
+      "label": "training_dataset",
+      "comment": "Identifier of the evaluation dataset.",
+      "domain": "as:ModelRegistryEntry",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:forkLineage",
+      "@type": "rdf:Property",
+      "label": "fork_lineage",
+      "comment": "Ordered ancestry from base model to this version.",
+      "domain": "as:ModelRegistryEntry",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:schemaVersion",
+      "@type": "rdf:Property",
+      "label": "schema_version",
+      "comment": "Version of this schema the entry conforms to.",
+      "domain": "as:ModelRegistryEntry",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "dcterms:modified",
+      "@type": "rdf:Property",
+      "label": "updated_at",
+      "comment": "When this entry was last revised.",
+      "domain": "as:ModelRegistryEntry",
+      "range": "xsd:dateTime",
+      "required": true
+    }
+  ]
 }

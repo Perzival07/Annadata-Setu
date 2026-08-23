@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
 from contracts.client import get_nearby_outbreaks
-from contracts.mock_data import OUTBREAK as MOCK_OUTBREAK
+from contracts.constants import OUTBREAK_MIN_REPORTS, OUTBREAK_MIN_DISTINCT_PLOTS
 from brain.services.registry import get_registered_models, get_model_by_id
 
 logger = logging.getLogger("brain.router.public_api")
@@ -21,13 +21,20 @@ async def get_public_outbreaks(lat: Optional[float] = 19.9975, lon: Optional[flo
     """
     try:
         outbreaks = await get_nearby_outbreaks(lat, lon)
-    except Exception:
-        outbreaks = [MOCK_OUTBREAK]
+    except Exception as e:
+        # This feed is the DPG artifact — another state may consume it as fact.
+        # Serving a fixture when the datastore is unreachable publishes an
+        # epidemic that does not exist. An outage is a 503, not an outbreak.
+        logger.error(f"Outbreak source unavailable: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Outbreak data source is temporarily unavailable.",
+        )
 
     features = []
     for ob in outbreaks:
         # Enforce k-anonymity rule at API boundary
-        if ob.report_count < 5 or ob.distinct_plots < 3:
+        if ob.report_count < OUTBREAK_MIN_REPORTS or ob.distinct_plots < OUTBREAK_MIN_DISTINCT_PLOTS:
             continue
 
         feature = {
@@ -52,7 +59,7 @@ async def get_public_outbreaks(lat: Optional[float] = 19.9975, lon: Optional[flo
         "features": features,
         "metadata": {
             "dpg_standard": "disease-observation.v1.jsonld",
-            "k_anonymity_min_reports": 5,
+            "k_anonymity_min_reports": OUTBREAK_MIN_REPORTS,
             "license": "Apache-2.0"
         }
     }
@@ -76,12 +83,16 @@ def get_model(model_id: str):
 @router.get("/schema/{schema_name}")
 def get_schema(schema_name: str):
     """Serve DPG JSON-LD schema specification files."""
-    schema_path = os.path.join("schema", f"{schema_name}.jsonld")
-    if not os.path.exists(schema_path):
-        schema_path = os.path.join("schema", f"{schema_name}")
-    
-    if not os.path.exists(schema_path):
-        raise HTTPException(status_code=404, detail=f"Schema {schema_name} not found")
+    # schema_name arrives from the URL. Joining it straight onto a path lets
+    # "../../etc/passwd" out of the schema directory, so resolve and confirm
+    # the result is still inside it.
+    schema_dir = os.path.abspath("schema")
+    for candidate in (f"{schema_name}.jsonld", schema_name):
+        resolved = os.path.abspath(os.path.join(schema_dir, candidate))
+        if os.path.commonpath([schema_dir, resolved]) != schema_dir:
+            continue
+        if os.path.isfile(resolved):
+            with open(resolved, "r") as f:
+                return JSONResponse(content=json.load(f))
 
-    with open(schema_path, "r") as f:
-        return JSONResponse(content=json.load(f))
+    raise HTTPException(status_code=404, detail=f"Schema {schema_name} not found")

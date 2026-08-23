@@ -1,5 +1,295 @@
 {
-  "@context": "https://schema.org",
-  "@type": "DiseaseObservation",
-  "version": "1.0"
+  "@context": {
+    "as": "https://perzival07.github.io/Annadata-Setu/ns/v1#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "geo": "http://www.w3.org/2003/01/geo/wgs84_pos#",
+    "@version": 1.1,
+    "DiseaseObservation": "as:DiseaseObservation",
+    "obs_id": {
+      "@id": "as:observationId",
+      "@type": "xsd:string"
+    },
+    "plot_id": {
+      "@id": "as:plotId",
+      "@type": "xsd:string"
+    },
+    "geohash": {
+      "@id": "as:geohash",
+      "@type": "xsd:string"
+    },
+    "lat": {
+      "@id": "geo:lat",
+      "@type": "xsd:double"
+    },
+    "lon": {
+      "@id": "geo:long",
+      "@type": "xsd:double"
+    },
+    "district": {
+      "@id": "as:district",
+      "@type": "xsd:string"
+    },
+    "crop": {
+      "@id": "as:crop",
+      "@type": "xsd:string"
+    },
+    "disease": {
+      "@id": "as:disease",
+      "@type": "xsd:string"
+    },
+    "confidence": {
+      "@id": "as:confidence",
+      "@type": "xsd:double"
+    },
+    "is_action_needed": {
+      "@id": "as:isActionNeeded",
+      "@type": "xsd:boolean"
+    },
+    "created_at": {
+      "@id": "dcterms:created",
+      "@type": "xsd:dateTime"
+    },
+    "Outbreak": "as:Outbreak",
+    "cluster_id": {
+      "@id": "as:clusterId",
+      "@type": "xsd:string"
+    },
+    "centroid": {
+      "@id": "as:centroid",
+      "@type": "xsd:double",
+      "@container": "@list"
+    },
+    "radius_km": {
+      "@id": "as:radiusKm",
+      "@type": "xsd:double"
+    },
+    "report_count": {
+      "@id": "as:reportCount",
+      "@type": "xsd:integer"
+    },
+    "distinct_plots": {
+      "@id": "as:distinctPlots",
+      "@type": "xsd:integer"
+    },
+    "first_seen": {
+      "@id": "as:firstSeen",
+      "@type": "xsd:dateTime"
+    },
+    "alert_ring_km": {
+      "@id": "as:alertRingKm",
+      "@type": "xsd:double"
+    },
+    "label": "rdfs:label",
+    "comment": "rdfs:comment",
+    "domain": {
+      "@id": "rdfs:domain",
+      "@type": "@id"
+    },
+    "range": {
+      "@id": "rdfs:range",
+      "@type": "@id"
+    },
+    "required": "as:required",
+    "nullable": "as:nullable",
+    "constraint": "as:constraint"
+  },
+  "@id": "https://perzival07.github.io/Annadata-Setu/schema/disease-observation.v1.jsonld",
+  "@type": "owl:Ontology",
+  "label": "Disease Observation",
+  "comment": "The epidemiological layer: one anonymised data point per diagnosis, and the aggregated clusters derived from them. Clusters are the only form in which this data is published.",
+  "owl:versionInfo": "1.0",
+  "dcterms:license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "dcterms:publisher": "Annadata Setu",
+  "dcterms:modified": "2026-08-23",
+  "@graph": [
+    {
+      "@id": "as:DiseaseObservation",
+      "@type": "rdfs:Class",
+      "label": "DiseaseObservation",
+      "comment": "A single anonymised disease report tied to a plot, never to a person."
+    },
+    {
+      "@id": "as:observationId",
+      "@type": "rdf:Property",
+      "label": "obs_id",
+      "comment": "Unique identifier for this observation.",
+      "domain": "as:DiseaseObservation",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:plotId",
+      "@type": "rdf:Property",
+      "label": "plot_id",
+      "comment": "Plot the observation belongs to.",
+      "domain": "as:DiseaseObservation",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:geohash",
+      "@type": "rdf:Property",
+      "label": "geohash",
+      "comment": "7-character geohash of the plot.",
+      "domain": "as:DiseaseObservation",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "geo:lat",
+      "@type": "rdf:Property",
+      "label": "lat",
+      "comment": "WGS84 latitude of the plot centroid.",
+      "domain": "as:DiseaseObservation",
+      "range": "xsd:double",
+      "required": true
+    },
+    {
+      "@id": "geo:long",
+      "@type": "rdf:Property",
+      "label": "lon",
+      "comment": "WGS84 longitude of the plot centroid.",
+      "domain": "as:DiseaseObservation",
+      "range": "xsd:double",
+      "required": true
+    },
+    {
+      "@id": "as:district",
+      "@type": "rdf:Property",
+      "label": "district",
+      "comment": "Administrative district.",
+      "domain": "as:DiseaseObservation",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:crop",
+      "@type": "rdf:Property",
+      "label": "crop",
+      "comment": "Crop under cultivation.",
+      "domain": "as:DiseaseObservation",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:disease",
+      "@type": "rdf:Property",
+      "label": "disease",
+      "comment": "Condition reported. Clustering groups strictly by this value.",
+      "domain": "as:DiseaseObservation",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:confidence",
+      "@type": "rdf:Property",
+      "label": "confidence",
+      "comment": "Confidence of the originating diagnosis.",
+      "domain": "as:DiseaseObservation",
+      "range": "xsd:double",
+      "required": true
+    },
+    {
+      "@id": "as:isActionNeeded",
+      "@type": "rdf:Property",
+      "label": "is_action_needed",
+      "comment": "Whether treatment was advised.",
+      "domain": "as:DiseaseObservation",
+      "range": "xsd:boolean",
+      "required": true
+    },
+    {
+      "@id": "dcterms:created",
+      "@type": "rdf:Property",
+      "label": "created_at",
+      "comment": "When the observation was recorded. Required: clustering uses a rolling 7-day window, and an undated observation cannot support a claim that something is happening now.",
+      "domain": "as:DiseaseObservation",
+      "range": "xsd:dateTime",
+      "required": true
+    },
+    {
+      "@id": "as:Outbreak",
+      "@type": "rdfs:Class",
+      "label": "Outbreak",
+      "comment": "An aggregated disease cluster. Publishing this instead of raw observations is what makes the dataset shareable: individual reports never leave the system."
+    },
+    {
+      "@id": "as:clusterId",
+      "@type": "rdf:Property",
+      "label": "cluster_id",
+      "comment": "Stable identifier for the cluster across sweeps.",
+      "domain": "as:Outbreak",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:disease",
+      "@type": "rdf:Property",
+      "label": "disease",
+      "comment": "Condition common to every member of the cluster.",
+      "domain": "as:Outbreak",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:centroid",
+      "@type": "rdf:Property",
+      "label": "centroid",
+      "comment": "Cluster centre as [latitude, longitude].",
+      "domain": "as:Outbreak",
+      "range": "xsd:double",
+      "required": true
+    },
+    {
+      "@id": "as:radiusKm",
+      "@type": "rdf:Property",
+      "label": "radius_km",
+      "comment": "Distance from the centroid to the furthest member.",
+      "domain": "as:Outbreak",
+      "range": "xsd:double",
+      "required": true
+    },
+    {
+      "@id": "as:reportCount",
+      "@type": "rdf:Property",
+      "label": "report_count",
+      "comment": "Number of member reports. A cluster below the k-anonymity threshold MUST NOT be serialised at all — this is enforced in the query, not filtered in a user interface.",
+      "domain": "as:Outbreak",
+      "range": "xsd:integer",
+      "required": true,
+      "constraint": "cluster is publishable only when report_count >= 5"
+    },
+    {
+      "@id": "as:distinctPlots",
+      "@type": "rdf:Property",
+      "label": "distinct_plots",
+      "comment": "Number of distinct plots represented, so repeat reports from one plot cannot manufacture a cluster.",
+      "domain": "as:Outbreak",
+      "range": "xsd:integer",
+      "required": true,
+      "constraint": "cluster is publishable only when distinct_plots >= 3"
+    },
+    {
+      "@id": "as:firstSeen",
+      "@type": "rdf:Property",
+      "label": "first_seen",
+      "comment": "Timestamp of the earliest member report — how long this has been spreading, not when it was last computed.",
+      "domain": "as:Outbreak",
+      "range": "xsd:dateTime",
+      "required": true
+    },
+    {
+      "@id": "as:alertRingKm",
+      "@type": "rdf:Property",
+      "label": "alert_ring_km",
+      "comment": "Radius around the centroid within which uninfected plots receive a pre-emptive warning.",
+      "domain": "as:Outbreak",
+      "range": "xsd:double",
+      "required": true
+    }
+  ]
 }

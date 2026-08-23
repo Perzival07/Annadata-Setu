@@ -1,5 +1,191 @@
 {
-  "@context": "https://schema.org",
-  "@type": "AdvisoryEvent",
-  "version": "1.0"
+  "@context": {
+    "as": "https://perzival07.github.io/Annadata-Setu/ns/v1#",
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs": "http://www.w3.org/2000/01/rdf-schema#",
+    "xsd": "http://www.w3.org/2001/XMLSchema#",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "dcterms": "http://purl.org/dc/terms/",
+    "geo": "http://www.w3.org/2003/01/geo/wgs84_pos#",
+    "@version": 1.1,
+    "AdvisoryEvent": "as:AdvisoryEvent",
+    "disease_name": {
+      "@id": "as:diseaseName",
+      "@type": "xsd:string"
+    },
+    "confidence": {
+      "@id": "as:confidence",
+      "@type": "xsd:double"
+    },
+    "differentials": {
+      "@id": "as:differentials",
+      "@type": "xsd:string",
+      "@container": "@set"
+    },
+    "is_action_needed": {
+      "@id": "as:isActionNeeded",
+      "@type": "xsd:boolean"
+    },
+    "action_text": {
+      "@id": "as:actionText",
+      "@type": "xsd:string"
+    },
+    "dosage": {
+      "@id": "as:dosage",
+      "@type": "xsd:string"
+    },
+    "estimated_cost_inr": {
+      "@id": "as:estimatedCostInr",
+      "@type": "xsd:integer"
+    },
+    "urgency_hours": {
+      "@id": "as:urgencyHours",
+      "@type": "xsd:integer"
+    },
+    "escalate_to_human": {
+      "@id": "as:escalateToHuman",
+      "@type": "xsd:boolean"
+    },
+    "reasoning_context": {
+      "@id": "as:reasoningContext",
+      "@type": "xsd:string",
+      "@container": "@set"
+    },
+    "sources": {
+      "@id": "as:sources",
+      "@type": "xsd:string",
+      "@container": "@set"
+    },
+    "label": "rdfs:label",
+    "comment": "rdfs:comment",
+    "domain": {
+      "@id": "rdfs:domain",
+      "@type": "@id"
+    },
+    "range": {
+      "@id": "rdfs:range",
+      "@type": "@id"
+    },
+    "required": "as:required",
+    "nullable": "as:nullable",
+    "constraint": "as:constraint"
+  },
+  "@id": "https://perzival07.github.io/Annadata-Setu/schema/advisory-event.v1.jsonld",
+  "@type": "owl:Ontology",
+  "label": "Advisory Event",
+  "comment": "One diagnosis delivered to one farmer: what the crop has, why we think so, what to do, and what it costs.",
+  "owl:versionInfo": "1.0",
+  "dcterms:license": "https://www.apache.org/licenses/LICENSE-2.0",
+  "dcterms:publisher": "Annadata Setu",
+  "dcterms:modified": "2026-08-23",
+  "@graph": [
+    {
+      "@id": "as:AdvisoryEvent",
+      "@type": "rdfs:Class",
+      "label": "Advisory Event",
+      "comment": "A structured crop-health advisory. Consumers MUST resolve escalate_to_human before reading is_action_needed — they are three distinct outcomes, not two."
+    },
+    {
+      "@id": "as:diseaseName",
+      "@type": "rdf:Property",
+      "label": "disease_name",
+      "comment": "Identified condition, or an explicit 'undetermined' marker when escalate_to_human is true.",
+      "domain": "as:AdvisoryEvent",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:confidence",
+      "@type": "rdf:Property",
+      "label": "confidence",
+      "comment": "Model confidence, 0.0 to 1.0.",
+      "domain": "as:AdvisoryEvent",
+      "range": "xsd:double",
+      "required": true,
+      "constraint": "0.0 <= confidence <= 1.0"
+    },
+    {
+      "@id": "as:differentials",
+      "@type": "rdf:Property",
+      "label": "differentials",
+      "comment": "Competing conditions considered and ranked below the primary one.",
+      "domain": "as:AdvisoryEvent",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:isActionNeeded",
+      "@type": "rdf:Property",
+      "label": "is_action_needed",
+      "comment": "False means the 'do not spray' path: the condition is abiotic or benign and chemical treatment would waste the farmer's money. It does NOT mean the diagnosis failed.",
+      "domain": "as:AdvisoryEvent",
+      "range": "xsd:boolean",
+      "required": true
+    },
+    {
+      "@id": "as:actionText",
+      "@type": "rdf:Property",
+      "label": "action_text",
+      "comment": "What the farmer should do, in plain language.",
+      "domain": "as:AdvisoryEvent",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:dosage",
+      "@type": "rdf:Property",
+      "label": "dosage",
+      "comment": "Application rate. MUST be null unless a cited source specifies it, and MUST be null whenever escalate_to_human is true — an unresolved diagnosis carries no prescription.",
+      "domain": "as:AdvisoryEvent",
+      "range": "xsd:string",
+      "required": false,
+      "nullable": true
+    },
+    {
+      "@id": "as:estimatedCostInr",
+      "@type": "rdf:Property",
+      "label": "estimated_cost_inr",
+      "comment": "Estimated cost of the recommended action, in INR. Zero when no action is prescribed.",
+      "domain": "as:AdvisoryEvent",
+      "range": "xsd:integer",
+      "required": true
+    },
+    {
+      "@id": "as:urgencyHours",
+      "@type": "rdf:Property",
+      "label": "urgency_hours",
+      "comment": "Hours within which the action should be taken.",
+      "domain": "as:AdvisoryEvent",
+      "range": "xsd:integer",
+      "required": true
+    },
+    {
+      "@id": "as:escalateToHuman",
+      "@type": "rdf:Property",
+      "label": "escalate_to_human",
+      "comment": "True when the system will not stand behind an automated answer and a human agronomist must review. A conforming renderer MUST NOT present an escalated advisory as an all-clear.",
+      "domain": "as:AdvisoryEvent",
+      "range": "xsd:boolean",
+      "required": true,
+      "constraint": "MUST be true when confidence < 0.65"
+    },
+    {
+      "@id": "as:reasoningContext",
+      "@type": "rdf:Property",
+      "label": "reasoning_context",
+      "comment": "Facts actually used to reach this conclusion, e.g. 'RH >85% for 4 nights'. This is the audit trail that distinguishes plot-aware advice from image classification.",
+      "domain": "as:AdvisoryEvent",
+      "range": "xsd:string",
+      "required": true
+    },
+    {
+      "@id": "as:sources",
+      "@type": "rdf:Property",
+      "label": "sources",
+      "comment": "Identifiers of the agronomic references retrieved and used, e.g. published package-of-practices documents.",
+      "domain": "as:AdvisoryEvent",
+      "range": "xsd:string",
+      "required": true
+    }
+  ]
 }

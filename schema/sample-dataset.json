@@ -1,1 +1,170 @@
-[]
+{
+  "@context": [
+    "https://perzival07.github.io/Annadata-Setu/schema/plot-passport.v1.jsonld",
+    "https://perzival07.github.io/Annadata-Setu/schema/advisory-event.v1.jsonld",
+    "https://perzival07.github.io/Annadata-Setu/schema/disease-observation.v1.jsonld",
+    "https://perzival07.github.io/Annadata-Setu/schema/model-registry.v1.jsonld"
+  ],
+  "@graph": [
+    {
+      "@type": "PlotPassport",
+      "plot_id": "hash_24aebeab",
+      "lat": 19.9975,
+      "lon": 73.7898,
+      "geohash": "tes3z0k",
+      "district": "Nashik",
+      "state": "Maharashtra",
+      "ndvi_series": [
+        {
+          "date": "2026-07-18",
+          "value": 0.401,
+          "ndwi": -0.128
+        },
+        {
+          "date": "2026-07-28",
+          "value": 0.499,
+          "ndwi": -0.075
+        },
+        {
+          "date": "2026-08-07",
+          "value": 0.594,
+          "ndwi": -0.024
+        },
+        {
+          "date": "2026-08-17",
+          "value": 0.707,
+          "ndwi": 0.013
+        }
+      ],
+      "inferred_crop": "Tomato",
+      "crop_stage_days": 58,
+      "cropping_history": [
+        "Tomato",
+        "Tomato",
+        "Onion"
+      ],
+      "soil": {
+        "ph": 6.4,
+        "soc": 0.51,
+        "texture": "loam",
+        "source": "District Soil Average"
+      },
+      "weather_10d": {
+        "rh_avg": 94,
+        "rain_mm": 9,
+        "temp_max": 27,
+        "disease_pressure": "HIGH",
+        "nights_sampled": 4,
+        "source": "Open-Meteo API"
+      },
+      "data_sources": [
+        "District Soil Average",
+        "Open-Meteo API",
+        "Sentinel-2 L2A Harmonized"
+      ],
+      "schema_version": "1.0"
+    },
+    {
+      "@type": "AdvisoryEvent",
+      "disease_name": "Early Blight (Alternaria solani)",
+      "confidence": 0.88,
+      "differentials": [
+        "Late Blight",
+        "Septoria Leaf Spot"
+      ],
+      "is_action_needed": true,
+      "action_text": "Spray Mancozeb 75% WP tomorrow morning, before the rain forecast for Thursday.",
+      "dosage": "2 g per litre of water",
+      "estimated_cost_inr": 340,
+      "urgency_hours": 24,
+      "escalate_to_human": false,
+      "reasoning_context": [
+        "Night RH averaged 95% over 4 nights",
+        "Tomato at day 58",
+        "Fourth consecutive tomato season"
+      ],
+      "sources": [
+        "ICAR_Tomato_Package_of_Practices_2023.pdf"
+      ]
+    },
+    {
+      "@type": "AdvisoryEvent",
+      "disease_name": "Undetermined",
+      "confidence": 0.0,
+      "differentials": [],
+      "is_action_needed": false,
+      "action_text": "We could not examine your photo automatically. Please do not spray on the strength of this message.",
+      "dosage": null,
+      "estimated_cost_inr": 0,
+      "urgency_hours": 24,
+      "escalate_to_human": true,
+      "reasoning_context": [
+        "Automated diagnosis unavailable — sent for human review"
+      ],
+      "sources": []
+    },
+    {
+      "@type": "DiseaseObservation",
+      "obs_id": "seed_hotspot_1",
+      "plot_id": "plot_nashik_hotspot_1",
+      "geohash": "tes3z2t",
+      "lat": 19.99875,
+      "lon": 73.80319,
+      "district": "Nashik",
+      "crop": "Tomato",
+      "disease": "Early Blight",
+      "confidence": 0.92,
+      "is_action_needed": true,
+      "created_at": "2026-08-16T19:19:45.543477+00:00"
+    },
+    {
+      "@type": "Outbreak",
+      "cluster_id": "cluster_early_blight_20001_73791",
+      "disease": "Early Blight",
+      "centroid": [
+        20.000634285714284,
+        73.79121857142857
+      ],
+      "radius_km": 1.88,
+      "report_count": 7,
+      "distinct_plots": 7,
+      "first_seen": "2026-08-16T19:19:45.543477Z",
+      "alert_ring_km": 15.0
+    },
+    {
+      "@type": "ModelRegistryEntry",
+      "model_id": "annadata-gemini-mh-tomato-v1.2",
+      "name": "Maharashtra Tomato Blight & Abiotic Classifier",
+      "base_model": "gemini-2.5-flash",
+      "state": "Maharashtra",
+      "crop": "Tomato",
+      "accuracy_f1": 0.912,
+      "calibration_error": 0.043,
+      "training_dataset": "ICAR-MH-Tomato-2023-v1",
+      "fork_lineage": [
+        "base/gemini-2.5-flash",
+        "annadata/mh-tomato-v1.0"
+      ],
+      "schema_version": "1.0",
+      "updated_at": "2024-03-01T12:00:00Z"
+    },
+    {
+      "@type": "ModelRegistryEntry",
+      "model_id": "annadata-gemini-ka-tomato-v1.2.1",
+      "name": "Karnataka Tomato Blight & Wilt Variant",
+      "base_model": "annadata-gemini-mh-tomato-v1.2",
+      "state": "Karnataka",
+      "crop": "Tomato",
+      "accuracy_f1": 0.898,
+      "calibration_error": 0.051,
+      "training_dataset": "UAS-Dharwad-Tomato-2023",
+      "fork_lineage": [
+        "base/gemini-2.5-flash",
+        "annadata/mh-tomato-v1.2",
+        "annadata/ka-tomato-v1.2.1"
+      ],
+      "schema_version": "1.0",
+      "updated_at": "2024-03-10T09:30:00Z"
+    }
+  ]
+}
