@@ -7,6 +7,20 @@ MOCK = os.getenv("MOCK_MODE", "false").lower() == "true"
 GROUND_URL = os.getenv("GROUND_URL", "http://localhost:8003")
 BRAIN_URL = os.getenv("BRAIN_URL", "http://localhost:8002")
 
+# How long the caller waits for a diagnosis.
+#
+# THIS MUST EXCEED BRAIN'S WORST CASE, which is GEMINI_TOOLS_BUDGET_S (the
+# gather phase) plus the decide call plus the image upload. It was 30s, chosen
+# when a diagnosis was a single Gemini call. Turning on ENABLE_GEMINI_TOOLS adds
+# a whole research round trip in front of that, and the two together routinely
+# exceed 30s — brain would finish a perfectly good diagnosis and post its
+# telemetry while the caller had already given up and escalated to a human.
+#
+# The farmer saw "we could not assess your photo" for a photo that WAS assessed.
+# Nothing logged an error on either side: brain logged success, channel logged a
+# timeout, and only reading both together showed they were the same request.
+DIAGNOSE_TIMEOUT_S = float(os.getenv("DIAGNOSE_TIMEOUT_S", "90"))
+
 async def get_plot_passport(lat: float, lon: float) -> PlotPassport:
     if MOCK:
         return mock_data.PASSPORT
@@ -34,7 +48,7 @@ async def diagnose_leaf(
         payload["image_base64"] = image_base64
     if image_url:
         payload["image_url"] = image_url
-    async with httpx.AsyncClient(timeout=30.0) as client:
+    async with httpx.AsyncClient(timeout=DIAGNOSE_TIMEOUT_S) as client:
         res = await client.post(f"{BRAIN_URL}/diagnose", json=payload)
         res.raise_for_status()
         return Diagnosis(**res.json())
@@ -63,7 +77,10 @@ async def compose_voice_script(
     payload = {"diagnosis": diagnosis.model_dump(), "language": language}
     if passport:
         payload["passport"] = passport.model_dump()
-    async with httpx.AsyncClient(timeout=20.0) as client:
+    # Also a live Gemini call, so it gets the same budget rather than a tighter
+    # one that would silently drop the generated script and fall back to the
+    # local template.
+    async with httpx.AsyncClient(timeout=DIAGNOSE_TIMEOUT_S) as client:
         res = await client.post(f"{BRAIN_URL}/advisory-script", json=payload)
         res.raise_for_status()
         return res.json().get("script")

@@ -21,6 +21,20 @@ logger = logging.getLogger("brain.gemini")
 MOCK = os.getenv("MOCK_MODE", "false").lower() == "true"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+# Configurable because a pinned model is a thing that expires. gemini-2.5-flash
+# was hardcoded here and in grounding.py, and Google now refuses it for keys
+# created after its retirement:
+#   404 — "This model models/gemini-2.5-flash is no longer available to new
+#          users. Please update your code to use models/gemini-3.6-flash"
+# Every diagnosis on a new key 404'd, was caught by the except below, and came
+# back as an escalation — the service looked like it was working and was
+# quietly answering "we don't know" to everyone.
+#
+# Still pinned rather than an alias like gemini-flash-latest: this project pins
+# what it is exercised against (see brain/requirements.txt). The env var is the
+# escape hatch so the next retirement is a config change, not a code change.
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+
 # BRAIN.md §6: escalate_to_human is True when confidence < 0.65.
 CONFIDENCE_ESCALATION_THRESHOLD = 0.65
 
@@ -220,7 +234,7 @@ class GeminiService:
             # diagnosis, serialising all concurrent farmers behind one another.
             response = await asyncio.to_thread(
                 self.client.models.generate_content,
-                model="gemini-2.5-flash",
+                model=GEMINI_MODEL,
                 contents=user_content,
                 config=config,
             )
@@ -315,7 +329,7 @@ class GeminiService:
             )
             response = await asyncio.to_thread(
                 self.client.models.generate_content,
-                model="gemini-2.5-flash",
+                model=GEMINI_MODEL,
                 contents=[
                     f"Compose the spoken {lang.english_name} advisory for: "
                     f"{json.dumps(context, ensure_ascii=False)}"

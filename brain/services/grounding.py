@@ -57,7 +57,9 @@ ENABLED = os.getenv("ENABLE_GEMINI_TOOLS", "false").lower() == "true"
 # diagnosis now than a grounded one they have stopped waiting for.
 GATHER_BUDGET_S = float(os.getenv("GEMINI_TOOLS_BUDGET_S", "20"))
 
-GATHER_MODEL = "gemini-2.5-flash"
+# Same model as the decide phase by default; see GEMINI_MODEL in gemini.py for
+# why this is not hardcoded.
+GATHER_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
 
 GATHER_INSTRUCTION = (
     "You are the research step of an Indian crop diagnosis pipeline. You are NOT "
