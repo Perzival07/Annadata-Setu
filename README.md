@@ -104,6 +104,35 @@ The ChromaDB store is committed, so this is only needed after changing the PDFs:
   ground.tests.test_cluster ground.tests.test_geocode
 ```
 
+## Crop coverage
+
+Built-in agronomic notes for the 13 most-farmed crops of the subcontinent — 36
+entries covering symptoms, the conditions that favour each problem, management,
+and the cultural practice that matters more than the spray:
+
+| | Crops | Problems covered |
+|---|---|---|
+| Cereals | Rice, Wheat, Maize | blast, bacterial leaf blight, sheath blight, brown spot, yellow rust, karnal bunt, powdery mildew, turcicum leaf blight, fall armyworm |
+| Fibre & cash | Cotton, Sugarcane | bacterial blight, pink bollworm, leaf curl virus, red rot, wilt, smut |
+| Pulses | Chickpea, Pigeon Pea, Soybean | fusarium wilt, ascochyta blight, pod borer, sterility mosaic, rust, yellow mosaic, charcoal rot |
+| Oilseeds | Mustard, Groundnut | alternaria blight, white rust, aphid, tikka leaf spot, rust, collar rot |
+| Horticulture | Potato, Tomato, Onion | late blight, early blight, black scurf, purple blotch, nitrogen deficiency |
+
+Insect pests and viruses are included alongside fungal disease and deliberately
+say so — fall armyworm, pink bollworm, pod borer, aphid and the whitefly-borne
+viruses are the cases where a fungicide costs money and fixes nothing, which is
+the same "don't spray" logic the nitrogen-deficiency path exists for.
+
+**These are the fallback, not the source of truth.** They carry `source=None` and
+are never citable: when the ICAR corpus is populated it is queried instead, and a
+dosage may only ever come from a retrieved document. The notes exist so a clone
+that has not run `ingest` still gets sane agronomy for the right crop, rather
+than tomato advice for a rice plot.
+
+Every disease here has a name in all four languages, enforced by
+`brain/tests/test_crop_coverage.py` — an unnamed disease would silently degrade
+the voice note to "symptoms of disease" and never tell the farmer what they have.
+
 ## Languages
 
 Farmer-facing output is available in **Marathi, Hindi, Bengali and English**.
