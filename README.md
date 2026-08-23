@@ -146,17 +146,36 @@ The officer dashboard and the public DPG feed stay English.
 
 ## Gemini API keys
 
-`GEMINI_API_KEY`, plus optionally `GEMINI_API_KEY_1`, `_2`, `_3`… They are tried
-in order and the pool moves to the next one on a quota error, sticking with
-whichever key last worked.
+`GEMINI_API_KEY`, plus optionally `GEMINI_API_KEY_1`, `_2`, `_3`… Requests are
+spread **round-robin** across every configured key, with failover on top.
 
-This matters because the free tier meters **per key and per model**: a key can be
-exhausted for `gemini-3.6-flash` and still answer on `gemini-3.5-flash`. One key
-runs out partway through a demo; three do not.
+This matters because the free tier meters **per key, per model, per minute**. Two
+consequences:
 
-Rotation happens only on `429` (quota) and `503` (overload). A `404` means the
-model is retired and a `403` means the key is wrong — trying those on every key
-would just burn the rest to reach the same error.
+- **Spread, don't stick.** Round-robin gives roughly N× the per-minute headroom.
+  Pinning to one key is what trips a rate limit while the others sit idle.
+- **Don't race.** Sending the same request to all keys and taking the fastest
+  would burn N× the quota to shave a queueing delay that barely exists — a
+  diagnosis spends 4–8s inside the model. That spends the scarce resource to buy
+  the cheap one.
+
+A key that fails is put on **cooldown**, keyed by `(key, model)` because that is
+how the quota is actually metered — a key spent on `gemini-3.6-flash` still
+answers on `gemini-3.5-flash`.
+
+What rotates is decided by one question: *would another key behave differently?*
+
+| Error | | Behaviour |
+|---|---|---|
+| `429` quota | key-specific | rotate, 60s cooldown |
+| `503` overloaded | transient | rotate, 60s cooldown |
+| `403` project denied | **key-specific** | rotate, 30min cooldown, logged as an error |
+| `404` model retired | same on every key | raise immediately |
+| `400` bad request | same on every key | raise immediately |
+
+`403` belongs with the rotating errors, not the fatal ones: it means *this
+project* is denied, and the other keys are other projects. Grouping it with
+`404` meant one denied key in four failed one diagnosis in four.
 
 `GEMINI_MODEL` selects the model (default `gemini-3.6-flash`). It is pinned
 rather than aliased, but configurable: `gemini-2.5-flash` was hardcoded here

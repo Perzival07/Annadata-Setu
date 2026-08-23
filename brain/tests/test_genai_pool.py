@@ -48,10 +48,12 @@ class FakeClient:
 
 
 def _pool(*scripts) -> GeminiPool:
+    import itertools
     p = GeminiPool.__new__(GeminiPool)
     p._clients = [FakeClient(s) for s in scripts]
     p._labels = [f"key{i+1}(...zzzz)" for i in range(len(scripts))]
-    p._current = 0
+    p._turn = itertools.count()
+    p._cooldown = {}
     return p
 
 
@@ -89,15 +91,36 @@ class RotationTest(unittest.TestCase):
         self.assertEqual(p._clients[0].calls, 1)
         self.assertEqual(p._clients[1].calls, 1)
 
-    def test_the_working_key_becomes_the_starting_point(self):
-        """A spent key must not be retried first on every later request."""
+    def test_a_cooling_key_is_not_retried_on_every_request(self):
+        """A spent key must sit out, not be re-probed by each new farmer."""
         p = _pool([quota(), quota()], [mock.Mock(text="a"), mock.Mock(text="b")])
         run(p.generate(model="m", contents=["x"], config=None))
-        self.assertEqual(p._current, 1)
         run(p.generate(model="m", contents=["x"], config=None))
-        # Key 1 was tried once, not twice.
+        # Key 1 was tried once and then skipped, not tried again.
         self.assertEqual(p._clients[0].calls, 1)
         self.assertEqual(p._clients[1].calls, 2)
+
+    def test_cooldown_is_per_key_and_model_not_per_key(self):
+        """Measured reality: a key can be spent for one model and fine on another."""
+        p = _pool([quota(), mock.Mock(text="other-model-ok")], [mock.Mock(text="b")])
+        run(p.generate(model="3.6", contents=["x"], config=None))   # key1 fails, key2 serves
+        self.assertTrue(p._is_cooling(0, "3.6"))
+        self.assertFalse(p._is_cooling(0, "3.5"), "a different model must not be blocked")
+
+    def test_success_clears_a_stale_cooldown(self):
+        p = _pool([mock.Mock(text="ok")], [mock.Mock(text="b")])
+        p._cooldown[(0, "m")] = __import__("time").monotonic() + 999
+        run(p.generate(model="m", contents=["x"], config=None))
+        # Whichever key served, a served key must not remain marked as cooling.
+        self.assertTrue(all(not p._is_cooling(i, "m") for i in range(2)
+                            if p._clients[i].calls > 0))
+
+    def test_every_key_cooling_still_attempts_rather_than_giving_up(self):
+        """The cooldown is a guess; never refuse to make a request because of it."""
+        p = _pool([mock.Mock(text="ok")], [mock.Mock(text="b")])
+        now = __import__("time").monotonic()
+        p._cooldown = {(0, "m"): now + 999, (1, "m"): now + 999}
+        self.assertIsNotNone(run(p.generate(model="m", contents=["x"], config=None)))
 
     def test_all_keys_exhausted_raises_the_last_error(self):
         p = _pool([quota()], [quota()])
@@ -117,6 +140,24 @@ class RotationTest(unittest.TestCase):
             run(p.generate(model="m", contents=["x"], config=None))
         self.assertEqual(p._clients[1].calls, 0, "second key must not be tried")
 
+    def test_a_denied_project_rotates_to_another_key(self):
+        """403 is key-specific: the other keys belong to other projects.
+
+        Grouping it with 404/400 meant one denied key in four failed one
+        diagnosis in four under round-robin.
+        """
+        good = mock.Mock(text="ok")
+        p = _pool([RuntimeError("403 PERMISSION_DENIED. Your project has been denied access")], [good])
+        self.assertIs(run(p.generate(model="m", contents=["x"], config=None)), good)
+
+    def test_a_denied_key_is_benched_for_longer_than_a_quota_blip(self):
+        """A denied project needs a human; re-probing it every minute is noise."""
+        import time as _t
+        p = _pool([RuntimeError("403 PERMISSION_DENIED")], [mock.Mock(text="ok")])
+        run(p.generate(model="m", contents=["x"], config=None))
+        remaining = p._cooldown[(0, "m")] - _t.monotonic()
+        self.assertGreater(remaining, pool_module.COOLDOWN_S)
+
     def test_a_bad_request_does_not_rotate(self):
         p = _pool([RuntimeError("400 INVALID_ARGUMENT")], [mock.Mock()])
         with self.assertRaises(RuntimeError):
@@ -129,10 +170,29 @@ class RotationTest(unittest.TestCase):
             run(p.generate(model="m", contents=["x"], config=None))
 
 
+class SpreadTest(unittest.TestCase):
+    """Round-robin, not stickiness: four farmers must not queue behind one key."""
+
+    def test_consecutive_calls_use_different_keys(self):
+        p = _pool(*[[mock.Mock(text=f"r{i}") for i in range(3)] for _ in range(4)])
+        for _ in range(4):
+            run(p.generate(model="m", contents=["x"], config=None))
+        used = [c.calls for c in p._clients]
+        self.assertEqual(used, [1, 1, 1, 1], f"load not spread evenly: {used}")
+
+    def test_load_stays_even_over_many_calls(self):
+        p = _pool(*[[mock.Mock(text="r") for _ in range(10)] for _ in range(4)])
+        for _ in range(12):
+            run(p.generate(model="m", contents=["x"], config=None))
+        self.assertEqual([c.calls for c in p._clients], [3, 3, 3, 3])
+
+
 class StatusTest(unittest.TestCase):
     def test_status_never_exposes_a_usable_key(self):
+        import itertools
         p = GeminiPool.__new__(GeminiPool)
-        p._clients, p._labels, p._current = [object()], ["key1(...abcd)"], 0
+        p._clients, p._labels = [object()], ["key1(...abcd)"]
+        p._turn, p._cooldown = itertools.count(), {}
         blob = repr(p.status())
         self.assertIn("key1(...abcd)", blob)
         self.assertNotIn("AIza", blob)
