@@ -56,6 +56,11 @@
       "@type": "xsd:string",
       "@container": "@set"
     },
+    "web_sources": {
+      "@id": "as:webSources",
+      "@type": "xsd:anyURI",
+      "@container": "@set"
+    },
     "label": "rdfs:label",
     "comment": "rdfs:comment",
     "domain": {
@@ -186,6 +191,16 @@
       "domain": "as:AdvisoryEvent",
       "range": "xsd:string",
       "required": true
+    },
+    {
+      "@id": "as:webSources",
+      "@type": "rdf:Property",
+      "label": "web_sources",
+      "comment": "URLs of web pages retrieved by a search-grounded reasoning step, where the implementation uses one. Distinct from as:sources, which names reviewed agronomic references. A web source is corroborating context — current disease reports, live advisories — and MUST NOT be the basis of a dosage. Optional: an implementation that does no web retrieval omits it or emits an empty set.",
+      "domain": "as:AdvisoryEvent",
+      "range": "xsd:anyURI",
+      "required": false,
+      "constraint": "MUST NOT be cited as the source of a dosage; see as:dosage"
     }
   ]
 }

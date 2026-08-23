@@ -28,9 +28,16 @@ app.include_router(alerts_router)
 
 @app.get("/health")
 def health():
+    from channel.services.translate import translate_service
+    from channel.services.media import media_archive_service
+
     return {
         "status": "ok",
         "service": "as-channel",
         "port": 8001,
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "translation": translate_service.status(),
+        # Worth seeing at a glance: with the archive off, every escalation tells
+        # a farmer an expert will review a photo that is not being kept.
+        "media_archive": media_archive_service.status(),
     }

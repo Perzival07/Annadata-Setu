@@ -31,6 +31,7 @@ def health():
     # The RAG corpus is reported here because an empty one is otherwise
     # invisible: retrieval keeps answering, just with nothing citable behind it.
     from brain.services.rag import rag_service
+    from brain.services import grounding
 
     rag = rag_service.status()
     return {
@@ -39,4 +40,8 @@ def health():
         "port": 8002,
         "version": "1.0.0",
         "rag": rag,
+        # Tool use is optional and fails soft, so its absence is silent by
+        # design. Report it here or nobody can tell whether the grounded
+        # diagnosis they think they configured is actually running.
+        "gemini_tools": grounding.status(),
     }

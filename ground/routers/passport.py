@@ -13,8 +13,13 @@ router = APIRouter(prefix="", tags=["Plot Passport"])
 class PassportRequest(BaseModel):
     lat: float = 19.9975
     lon: float = 73.7898
-    district: Optional[str] = "Nashik"
-    state: Optional[str] = "Maharashtra"
+    # None, not "Nashik". These are overrides for callers that already know the
+    # district — the officer dashboard does. Left unset, the pin is reverse
+    # geocoded (ground/services/geocode.py); defaulting them to Nashik labelled
+    # every farmer outside it with Nashik's district, telemetry fallbacks and
+    # outbreak cluster.
+    district: Optional[str] = None
+    state: Optional[str] = None
 
 @router.post("/plot-passport", response_model=PlotPassport)
 async def generate_plot_passport(req: PassportRequest):
@@ -22,7 +27,7 @@ async def generate_plot_passport(req: PassportRequest):
     passport = await passport_aggregator_service.build_plot_passport(
         lat=req.lat,
         lon=req.lon,
-        district=req.district or "Nashik",
-        state=req.state or "Maharashtra"
+        district=req.district,
+        state=req.state,
     )
     return passport

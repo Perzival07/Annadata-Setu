@@ -13,6 +13,15 @@ gcloud services enable \
   texttospeech.googleapis.com \
   cloudscheduler.googleapis.com \
   cloudfunctions.googleapis.com \
+  cloudbuild.googleapis.com \
+  geocoding-backend.googleapis.com \
+  translate.googleapis.com \
+  storage.googleapis.com \
   --project ${PROJECT_ID}
 
 echo "✅ All GCP APIs enabled!"
+echo
+echo "Note: enabling geocoding-backend does not create a key. GOOGLE_MAPS_API_KEY"
+echo "must be an API key from the Credentials page, restricted to the Geocoding API."
+echo "Gemini search grounding needs no separate API — it is billed through"
+echo "GEMINI_API_KEY as part of generateContent."

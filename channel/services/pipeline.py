@@ -8,6 +8,8 @@ from channel.services.whatsapp_out import whatsapp_out_service
 from channel.services.stt import stt_service
 from channel.services.tts import tts_service
 from channel.services.composer import composer_service
+from channel.services.translate import translate_service
+from channel.services.media import media_archive_service
 from channel.services.state import user_state_service
 
 from contracts.client import get_plot_passport, diagnose_leaf, compose_marathi_script
@@ -117,6 +119,14 @@ async def process_inbound_pipeline(msg: Dict[str, Any]):
         await whatsapp_out_service.send_audio_message(sender_phone, audio_bytes)
     await whatsapp_out_service.send_text_message(sender_phone, text_reply)
 
+    # After the reply, never before it. We have just promised this farmer that an
+    # agronomist will look at their photo — keep the photo so that is true. Meta's
+    # media URLs expire, so this is the last point at which the bytes exist.
+    if diagnosis.escalate_to_human:
+        await media_archive_service.archive_for_review(
+            image_bytes, sender_phone, passport, diagnosis
+        )
+
     logger.info(f"Finished pipeline for {sender_phone} (plot {passport.plot_id})")
 
 
@@ -163,4 +173,18 @@ async def resolve_marathi_script(diagnosis, passport=None) -> str:
             return script
     except Exception as e:
         logger.warning(f"Marathi script generation unavailable, using local template: {e}")
-    return composer_service.compose_marathi_script(diagnosis)
+
+    # Falling back. The template's biggest omission is action_text — the actual
+    # instruction — because it arrives in English and the voice is mr-IN. Cloud
+    # Translate can recover it; translate.py returns None whenever the result is
+    # not speakable, and None puts the script back exactly as it was.
+    action_mr = None
+    if not diagnosis.escalate_to_human:
+        # An escalation's script is a fixed "we could not read your photo, do
+        # not spray" — translating action_text into it would reintroduce advice
+        # we have just said we do not have.
+        action_mr = await translate_service.to_marathi(diagnosis.action_text)
+        if action_mr:
+            logger.info("Recovered action_text for the spoken script via translation.")
+
+    return composer_service.compose_marathi_script(diagnosis, action_mr=action_mr)

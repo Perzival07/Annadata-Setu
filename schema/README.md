@@ -71,12 +71,18 @@ the model itself reported. Enforce the threshold in your own code.
 `estimated_cost_inr` must be `0`. This is defence in depth for rule 2: a consumer that
 gets the branching wrong still finds nothing to bill the farmer for.
 
-**5. `dosage` is null unless a cited source specifies it.** If your retrieved references
-do not state an application rate, say so in `action_text` and leave `dosage` null. Never
-synthesise one.
+**5. `dosage` is null unless a *reviewed* source specifies it.** If your retrieved
+references do not state an application rate, say so in `action_text` and leave `dosage`
+null. Never synthesise one. "Reviewed" means `sources` — published package-of-practices
+documents. It does **not** mean `web_sources`: a page returned by a search engine is
+corroborating context, not an agronomic authority, and an implementation that lets one
+supply an application rate is putting an unreviewed chemical dose in a farmer's hands.
 
 **6. `data_sources` and `sources` are mandatory.** An advisory that cannot name its
-provenance cannot be audited by the administration adopting it.
+provenance cannot be audited by the administration adopting it. `web_sources` is
+optional — omit it or emit an empty set if you do no web retrieval — but where an
+implementation does use search grounding, it must record the URLs the retrieval step
+actually returned, not URLs a model wrote in its output.
 
 **7. Observations are undated at their peril.** `created_at` is required on
 `DiseaseObservation`. Clustering runs over a rolling 7-day window; an undated report

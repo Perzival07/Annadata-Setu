@@ -117,7 +117,12 @@ async def diagnose(req: DiagnoseRequest, background_tasks: BackgroundTasks):
     nearby = []
     try:
         outbreaks = await get_nearby_outbreaks(passport.lat, passport.lon)
-        nearby = [o.model_dump() for o in outbreaks]
+        # mode="json" matters: Outbreak.first_seen is a datetime, and gemini.py
+        # json.dumps() this straight into the prompt. In python mode that raised
+        # TypeError inside the diagnosis try/except, so every plot that actually
+        # had a nearby outbreak — the ones we most want the model to know about —
+        # escalated to a human instead of being diagnosed.
+        nearby = [o.model_dump(mode="json") for o in outbreaks]
     except Exception as e:
         logger.warning(f"Failed to fetch nearby outbreaks: {e}")
 

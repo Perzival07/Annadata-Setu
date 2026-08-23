@@ -13,6 +13,7 @@ from contracts.mock_data import DIAGNOSIS as MOCK_DIAGNOSIS
 # whether Gemini failed here or brain was unreachable from the pipeline.
 from contracts.fallbacks import unavailable_diagnosis
 from brain.services.rag import rag_service
+from brain.services.grounding import gather_context
 
 logger = logging.getLogger("brain.gemini")
 
@@ -152,7 +153,20 @@ class GeminiService:
             icar_sources = sorted({d["source"] for d in rag_docs if d.get("source")})
             has_corpus = bool(icar_sources)
 
-            # 2. Build structured prompt context
+            # 2. Gather phase — the model researches with Google Search and our
+            # own services before anything is decided (brain/services/grounding.py).
+            # It cannot run on this call: the API refuses tools alongside the
+            # response_schema below, and BRAIN.md §7 will not give up the schema.
+            # Returns EMPTY when disabled or on any failure, and an empty gather
+            # leaves the diagnosis exactly as it was before tools existed.
+            gathered = await gather_context(
+                self.client,
+                passport,
+                image_bytes=image_bytes,
+                nearby_outbreaks=nearby_outbreaks,
+            )
+
+            # 3. Build structured prompt context
             prompt_context = {
                 "plot_passport": passport.model_dump(),
                 "retrieved_icar_docs": [doc["content"] for doc in rag_docs],
@@ -162,11 +176,24 @@ class GeminiService:
                 "retrieved_from_document_corpus": has_corpus,
                 "nearby_outbreaks": nearby_outbreaks or []
             }
+            if not gathered.is_empty:
+                # Labelled, not merged into retrieved_icar_docs. These notes are
+                # partly web-derived, and the one thing a web page must never do
+                # here is supply a dosage.
+                prompt_context["research_notes"] = gathered.notes
+                prompt_context["research_notes_caveat"] = (
+                    "These notes come from a research step that used web search. "
+                    "Treat them as context and corroboration only. A dosage may "
+                    "come ONLY from retrieved_icar_docs, never from these notes."
+                )
 
             system_instruction = load_system_instruction()
 
             user_content = [
-                f"Diagnose this field plot context: {json.dumps(prompt_context, indent=2)}"
+                # default=str so an unexpected datetime from a caller degrades to
+                # a readable string rather than raising into the escalation path.
+                "Diagnose this field plot context: "
+                + json.dumps(prompt_context, indent=2, default=str)
             ]
 
             # If image bytes exist, attach as image part
@@ -180,6 +207,7 @@ class GeminiService:
                 response_schema=Diagnosis
             )
 
+            # 4. Decide phase — tools off, schema on.
             # google-genai's generate_content is a blocking HTTP call. Awaiting
             # it directly would freeze the event loop for the full 3-8s of every
             # diagnosis, serialising all concurrent farmers behind one another.
@@ -200,9 +228,12 @@ class GeminiService:
             if not isinstance(data, dict):
                 raise ValueError(f"Gemini returned {type(data).__name__}, expected a JSON object")
 
-            # sources[] is the audit trail, so it must reflect what was really
-            # retrieved rather than whatever the model chose to write there.
+            # Both source lists are the audit trail, so they must reflect what
+            # was really retrieved rather than whatever the model chose to write
+            # there. web_sources comes from grounding_metadata — the URLs Google
+            # reports having fetched — so a URL the model typed cannot get in.
             data["sources"] = icar_sources
+            data["web_sources"] = gathered.source_urls()
 
             diagnosis = Diagnosis(**data)
 

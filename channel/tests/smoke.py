@@ -11,6 +11,7 @@ import unittest
 from unittest import mock
 
 from channel.services import pipeline
+from contracts.fallbacks import unavailable_diagnosis
 from contracts.mock_data import DIAGNOSIS as FIXTURE
 
 
@@ -123,6 +124,56 @@ class ChannelPipelineTest(unittest.TestCase):
 
         self.assertIsNone(seen["url"])
         self.assertEqual(base64.b64decode(seen["b64"]), b"\xff\xd8\xff fake-jpeg")
+
+    # -------------------------------------------------- escalation photo archive
+
+    def _run_image_with(self, diagnosis):
+        """Drive the image path to completion against a fixed diagnosis."""
+        async def fake_diagnose(image_url, passport, image_base64=None):
+            return diagnosis
+
+        async def fake_passport(lat, lon):
+            from contracts.mock_data import PASSPORT
+            return PASSPORT
+
+        archive = mock.AsyncMock(return_value="gs://bucket/x.jpg")
+        with mock.patch.object(pipeline, "diagnose_leaf", fake_diagnose), \
+             mock.patch.object(pipeline, "get_plot_passport", fake_passport), \
+             mock.patch.object(pipeline.media_archive_service, "archive_for_review", archive):
+            self._run(_payload("image", f"m_arch_{id(diagnosis)}", media_id="mid_arch"))
+        return archive
+
+    def test_escalated_photo_is_kept_for_the_review_we_promised(self):
+        """The reply says an agronomist will look at the photo. Keep the photo."""
+        archive = self._run_image_with(unavailable_diagnosis())
+        archive.assert_awaited_once()
+        self.assertEqual(archive.await_args.args[0], b"\xff\xd8\xff fake-jpeg")
+
+    def test_confident_diagnosis_photo_is_not_retained(self):
+        """No review was promised, so there is no reason to hold a farmer's photo."""
+        self._run_image_with(FIXTURE).assert_not_awaited()
+
+    def test_archive_runs_after_the_farmer_has_been_answered(self):
+        """A storage outage must cost the review queue, never the advisory."""
+        async def boom(*a, **k):
+            raise RuntimeError("bucket gone")
+
+        async def fake_diagnose(image_url, passport, image_base64=None):
+            return unavailable_diagnosis()
+
+        async def fake_passport(lat, lon):
+            from contracts.mock_data import PASSPORT
+            return PASSPORT
+
+        with mock.patch.object(pipeline, "diagnose_leaf", fake_diagnose), \
+             mock.patch.object(pipeline, "get_plot_passport", fake_passport), \
+             mock.patch.object(pipeline.media_archive_service, "archive_for_review", boom):
+            with self.assertRaises(RuntimeError):
+                self._run(_payload("image", "m_arch_boom", media_id="mid_boom"))
+
+        # The advisory and the voice note both went out before the archive ran.
+        self.assertIn("फवारणी करू नका", self.out.texts[-1])
+        self.assertEqual(len(self.out.audio), 1)
 
 
 if __name__ == "__main__":

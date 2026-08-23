@@ -34,6 +34,18 @@ if [[ "${MOCK_MODE}" != "true" && -z "${GEMINI_API_KEY:-}" ]]; then
   exit 1
 fi
 
+# Not fatal, but the operator should know what they are shipping without.
+if [[ "${MOCK_MODE}" != "true" && -z "${MEDIA_ARCHIVE_BUCKET:-}" ]]; then
+  echo "⚠️  MEDIA_ARCHIVE_BUCKET is not set. Every escalated advisory tells the"
+  echo "   farmer an agronomist will review their photo, and nothing will keep"
+  echo "   the photo — Meta's media URLs expire."
+fi
+
+if [[ "${MOCK_MODE}" != "true" && -z "${GOOGLE_MAPS_API_KEY:-}" ]]; then
+  echo "⚠️  GOOGLE_MAPS_API_KEY is not set. Plots whose caller names no district"
+  echo "   fall back to Nashik — its telemetry fallbacks and its outbreak cluster."
+fi
+
 echo "🚀 Deploying Annadata Setu to Cloud Run (${PROJECT_ID} / ${REGION})..."
 echo "   MOCK_MODE=${MOCK_MODE}"
 
@@ -73,19 +85,20 @@ service_url() {
 
 # 1. ground — the leaf service, calls nobody.
 build_and_deploy ground as-ground 8003 \
-  --set-env-vars "MOCK_MODE=${MOCK_MODE},GCP_PROJECT_ID=${PROJECT_ID}"
+  --set-env-vars "MOCK_MODE=${MOCK_MODE},GCP_PROJECT_ID=${PROJECT_ID},GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}"
 GROUND_URL=$(service_url as-ground)
 echo "   as-ground  → ${GROUND_URL}"
 
 # 2. brain — writes observations back to ground.
 build_and_deploy brain as-brain 8002 \
-  --set-env-vars "MOCK_MODE=${MOCK_MODE},GROUND_URL=${GROUND_URL},GEMINI_API_KEY=${GEMINI_API_KEY:-}"
+  --set-env-vars "MOCK_MODE=${MOCK_MODE},GROUND_URL=${GROUND_URL},GEMINI_API_KEY=${GEMINI_API_KEY:-},ENABLE_GEMINI_TOOLS=${ENABLE_GEMINI_TOOLS:-false},GEMINI_TOOLS_BUDGET_S=${GEMINI_TOOLS_BUDGET_S:-20}"
 BRAIN_URL=$(service_url as-brain)
 echo "   as-brain   → ${BRAIN_URL}"
 
-# 3. channel — orchestrates, so it needs both.
+# 3. channel — orchestrates, so it needs both. GCP_PROJECT_ID is required here
+# too: Cloud Translate is addressed as projects/<id>/locations/global.
 build_and_deploy channel as-channel 8001 \
-  --set-env-vars "MOCK_MODE=${MOCK_MODE},GROUND_URL=${GROUND_URL},BRAIN_URL=${BRAIN_URL},WHATSAPP_TOKEN=${WHATSAPP_TOKEN:-},WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID:-},META_VERIFY_TOKEN=${META_VERIFY_TOKEN:-}"
+  --set-env-vars "MOCK_MODE=${MOCK_MODE},GCP_PROJECT_ID=${PROJECT_ID},GROUND_URL=${GROUND_URL},BRAIN_URL=${BRAIN_URL},WHATSAPP_TOKEN=${WHATSAPP_TOKEN:-},WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID:-},META_VERIFY_TOKEN=${META_VERIFY_TOKEN:-},ENABLE_TRANSLATION=${ENABLE_TRANSLATION:-false},MEDIA_ARCHIVE_BUCKET=${MEDIA_ARCHIVE_BUCKET:-},MEDIA_HASH_SALT=${MEDIA_HASH_SALT:-}"
 CHANNEL_URL=$(service_url as-channel)
 echo "   as-channel → ${CHANNEL_URL}"
 

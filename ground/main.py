@@ -28,9 +28,15 @@ app.include_router(outbreaks_router)
 
 @app.get("/health")
 def health():
+    from ground.services.geocode import geocode_service
+
+    geocode = geocode_service.status()
     return {
         "status": "ok",
         "service": "as-ground",
         "port": 8003,
-        "version": "1.0.0"
+        "version": "1.0.0",
+        # Unconfigured geocoding is not an outage, but it does mean every plot
+        # the caller does not name a district for is labelled Nashik.
+        "geocoding": geocode,
     }

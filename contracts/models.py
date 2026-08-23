@@ -30,7 +30,12 @@ class Diagnosis(BaseModel):
     urgency_hours: int
     escalate_to_human: bool         # True when confidence < 0.65
     reasoning_context: list[str]    # ["RH >85% for 4 nights", "day 58 tomato"]
-    sources: list[str]              # ICAR filenames used by RAG
+    # Both source lists are overwritten server-side after the model responds —
+    # they record what was really retrieved, not what the model chose to write.
+    # Keep them distinct: `sources` are reviewed ICAR documents and may back a
+    # dosage; `web_sources` are pages Google Search returned and may not.
+    sources: list[str]                    # ICAR filenames used by RAG
+    web_sources: list[str] = []           # URLs from Gemini search grounding
 
 
 class Outbreak(BaseModel):
