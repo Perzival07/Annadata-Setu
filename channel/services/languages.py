@@ -23,10 +23,11 @@ from contracts.languages import (
     strip_to_speakable,
 )
 
-# Last resort when a pin resolves to a state we have no language for. English
-# rather than Marathi: a farmer in Kerala is far likelier to read English than
-# Marathi, and guessing a wrong Indian language reads as a bug, not a default.
-FALLBACK_BY_REGION = "en"
+# Every state outside the two below is answered in Hindi. It is the widest-reach
+# option of the four and the product decision for this deployment; English stays
+# reachable, but only when a farmer asks for it or writes in it, never as the
+# consequence of a pin landing somewhere unmapped.
+FALLBACK_BY_REGION = "hi"
 
 
 # --- Where a pin implies a language -----------------------------------------
@@ -35,28 +36,25 @@ FALLBACK_BY_REGION = "en"
 # loses to anything the farmer has actually told us.
 
 STATE_LANGUAGE: Dict[str, str] = {
-    "maharashtra": "mr",
-    "goa": "mr",
+    # Deliberately only two entries. The rule is: West Bengal is answered in
+    # Bengali, Maharashtra in Marathi, and everywhere else in Hindi via
+    # FALLBACK_BY_REGION. Listing more states here would quietly re-introduce
+    # per-state guesses that nobody asked for — Goa and Assam used to be mapped
+    # to Marathi and Bengali respectively, which is defensible linguistically
+    # and is not the rule this deployment runs on.
     "west bengal": "bn",
-    "tripura": "bn",
-    "assam": "bn",
-    "andaman and nicobar islands": "bn",
-    "uttar pradesh": "hi",
-    "bihar": "hi",
-    "madhya pradesh": "hi",
-    "rajasthan": "hi",
-    "haryana": "hi",
-    "delhi": "hi",
-    "national capital territory of delhi": "hi",
-    "uttarakhand": "hi",
-    "jharkhand": "hi",
-    "chhattisgarh": "hi",
-    "himachal pradesh": "hi",
+    "maharashtra": "mr",
 }
 
 
 def language_for_state(state: Optional[str]) -> Optional[str]:
-    """Majority language of a state, or None when we should not guess."""
+    """The language for a state, or None when the state itself is unknown.
+
+    A known state that is not West Bengal or Maharashtra returns None here and
+    the caller falls through to FALLBACK_BY_REGION (Hindi). None therefore means
+    "this table has nothing to say", not "answer in the default" — the caller
+    still distinguishes a real state from an unresolved pin.
+    """
     if not state:
         return None
     return STATE_LANGUAGE.get(state.strip().lower())

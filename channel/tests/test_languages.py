@@ -296,11 +296,34 @@ class ResolutionTest(unittest.TestCase):
             run(pipeline.resolve_language("p", passport=self._passport("Bihar"))), "hi"
         )
 
-    def test_unmapped_state_falls_back_to_english_not_marathi(self):
-        """Guessing a wrong Indian language is worse than a neutral one."""
+    def test_every_other_state_is_answered_in_hindi(self):
+        """The rule: West Bengal -> bn, Maharashtra -> mr, everywhere else -> hi."""
+        for state in ["Kerala", "Punjab", "Telangana", "Gujarat", "Goa", "Assam"]:
+            self.assertEqual(
+                run(pipeline.resolve_language("p", passport=self._passport(state))),
+                "hi",
+                f"{state} should be answered in Hindi",
+            )
+
+    def test_only_west_bengal_gets_bengali_and_only_maharashtra_marathi(self):
         self.assertEqual(
-            run(pipeline.resolve_language("p", passport=self._passport("Kerala"))), "en"
+            run(pipeline.resolve_language("p", passport=self._passport("West Bengal"))), "bn"
         )
+        self.assertEqual(
+            run(pipeline.resolve_language("p", passport=self._passport("Maharashtra"))), "mr"
+        )
+        # Neighbours that share the language culturally are still Hindi here,
+        # because the rule is by state and not by linguistics.
+        self.assertEqual(
+            run(pipeline.resolve_language("p", passport=self._passport("Goa"))), "hi"
+        )
+
+    def test_english_is_never_reached_by_location_alone(self):
+        """English stays available by choice or detection, never by a pin."""
+        for state in ["Kerala", "Tamil Nadu", "Nagaland"]:
+            self.assertNotEqual(
+                run(pipeline.resolve_language("p", passport=self._passport(state))), "en"
+            )
 
     def test_default_when_there_is_no_signal_at_all(self):
         self.assertEqual(run(pipeline.resolve_language("p")), DEFAULT_LANGUAGE)
@@ -345,6 +368,9 @@ class ResolutionTest(unittest.TestCase):
     def test_state_mapping_is_case_insensitive(self):
         self.assertEqual(language_for_state("west bengal"), "bn")
         self.assertEqual(language_for_state("WEST BENGAL"), "bn")
+        self.assertEqual(language_for_state("maharashtra"), "mr")
+        # None means "this table has nothing to say", and the caller then uses
+        # FALLBACK_BY_REGION. It does not mean "unknown place".
         self.assertIsNone(language_for_state("Kerala"))
         self.assertIsNone(language_for_state(None))
 

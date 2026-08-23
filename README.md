@@ -124,10 +124,21 @@ each degrading to the next rather than to a guess:
    in; a text message is read by script. Devanagari is ambiguous between Hindi
    and Marathi, so that case asks Cloud Translate rather than picking one —
    answering a Marathi farmer in Hindi is a failure neither side can see.
-3. **The plot's state**, from reverse geocoding (`West Bengal → bn`). The
-   weakest signal, which is why anything the farmer told us outranks it. Needs
-   no API key — see the next section.
-4. **Marathi**, the demo district's language and the historical default.
+3. **The plot's state**, from reverse geocoding. **West Bengal → Bengali,
+   Maharashtra → Marathi, every other state → Hindi.** The weakest signal, which
+   is why anything the farmer told us outranks it. Needs no API key — see the
+   reverse geocoding section.
+
+   English is deliberately unreachable from a location: a farmer gets it by
+   asking for it or by writing in it, never because a pin landed somewhere
+   unmapped.
+4. **Marathi**, the demo district's language and the historical default, used
+   only when there is no signal at all — including when `ground` is unreachable
+   and the plot's state is genuinely unknown.
+
+On the web app there is no phone number and so no stored preference: the
+**location picker decides**, which is layers 3 and 4 alone. Each preset shows
+the language it will produce before you submit.
 
 **The rule that makes it safe.** The voice note is synthesised by that
 language's TTS voice, and text in a script it does not read comes out as noise.
