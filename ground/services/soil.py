@@ -8,7 +8,11 @@ class SoilService:
     async def get_soil_properties(self, lat: float, lon: float, district: str = "Nashik") -> Dict[str, Any]:
         """
         Fetch soil composition from ISRIC SoilGrids REST API v2.
-        NOTE: SoilGrids raw returned values are scaled by 10 (divide by 10 for true pH/SOC).
+
+        SoilGrids returns integers scaled by a per-property d_factor of 10:
+          phh2o  is pH*10      -> /10  gives pH
+          soc    is dg/kg      -> /100 gives % organic carbon, the unit the
+                                  passport and the agronomy prompts expect
         """
         url = f"https://rest.isric.org/soilgrids/v2.0/properties/query?lon={lon}&lat={lat}&property=phh2o&property=soc"
         try:
@@ -24,9 +28,9 @@ class SoilService:
                         if depths:
                             mean_val = depths[0].get("values", {}).get("mean", 0)
                             if name == "phh2o":
-                                ph = round(mean_val / 10.0, 1)  # divide by 10
+                                ph = round(mean_val / 10.0, 1)
                             elif name == "soc":
-                                soc = round(mean_val / 100.0, 2)  # divide by 100
+                                soc = round(mean_val / 100.0, 2)
 
                     return {"ph": ph, "soc": soc, "texture": "clay loam", "source": "ISRIC SoilGrids v2.0"}
         except Exception as e:
