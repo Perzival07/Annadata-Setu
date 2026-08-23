@@ -27,6 +27,16 @@ class UserStateService:
         self.user_sessions[phone]["lat"] = lat
         self.user_sessions[phone]["lon"] = lon
 
+    def set_pending_note(self, phone: str, note: str):
+        """Remember the farmer's last text/voice note so the next photo carries it."""
+        if not note:
+            return
+        self.user_sessions.setdefault(phone, {})["pending_note"] = note
+
+    def take_pending_note(self, phone: str) -> Optional[str]:
+        """Read and clear the note — it belongs to one diagnosis, not to all of them."""
+        return self.user_sessions.get(phone, {}).pop("pending_note", None)
+
     def get_user_location(self, phone: str) -> Optional[tuple[float, float]]:
         """Retrieve last known coordinates for farmer."""
         session = self.user_sessions.get(phone, {})

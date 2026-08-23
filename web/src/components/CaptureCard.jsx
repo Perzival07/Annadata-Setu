@@ -4,6 +4,7 @@ export default function CaptureCard({ onDiagnose, loading }) {
   const [lat, setLat] = useState(19.9975);
   const [lon, setLon] = useState(73.7898);
   const [imagePreview, setImagePreview] = useState(null);
+  const [validationError, setValidationError] = useState(null);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -16,7 +17,14 @@ export default function CaptureCard({ onDiagnose, loading }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onDiagnose({ imageUrl: imagePreview || 'http://mock.url/leaf.jpg', lat, lon });
+    // No placeholder URL: without a real photo there is nothing to diagnose,
+    // and a stand-in only produces a confident answer about someone else's leaf.
+    if (!imagePreview) {
+      setValidationError('Please attach a photo of the affected leaf first.');
+      return;
+    }
+    setValidationError(null);
+    onDiagnose({ imageUrl: imagePreview, lat, lon });
   };
 
   return (
@@ -74,6 +82,15 @@ export default function CaptureCard({ onDiagnose, loading }) {
             />
           </div>
         </div>
+
+        {validationError && (
+          <div style={{
+            background: '#fff1f0', color: '#a8071a', border: '1px solid #ffa39e',
+            padding: '10px 12px', borderRadius: '8px', marginBottom: '12px', fontSize: '0.9rem'
+          }}>
+            {validationError}
+          </div>
+        )}
 
         <button
           type="submit"

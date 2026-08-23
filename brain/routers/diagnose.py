@@ -1,3 +1,4 @@
+import os
 import httpx
 import base64
 import logging
@@ -8,9 +9,13 @@ from pydantic import BaseModel
 from contracts.models import Diagnosis, PlotPassport
 from contracts.client import get_plot_passport, get_nearby_outbreaks
 from contracts.mock_data import PASSPORT as MOCK_PASSPORT
+from contracts.fallbacks import unavailable_diagnosis
 from brain.services.gemini import gemini_service
 
 logger = logging.getLogger("brain.router.diagnose")
+
+MOCK = os.getenv("MOCK_MODE", "false").lower() == "true"
+GROUND_URL = os.getenv("GROUND_URL", "http://localhost:8003")
 
 router = APIRouter(prefix="", tags=["Diagnosis"])
 
@@ -22,9 +27,25 @@ class DiagnoseRequest(BaseModel):
     lon: Optional[float] = None
 
 async def post_observation_telemetry(passport: PlotPassport, diagnosis: Diagnosis):
-    """Quietly write the diagnosis to ground service as an epidemiological data point."""
+    """Quietly write the diagnosis to ground service as an epidemiological data point.
+
+    This is the write half of "one farmer's question becomes everyone's early
+    warning" (BRAIN.md §2). It was pinned to http://localhost:8003, which
+    resolves to brain's own container on Cloud Run — every observation was
+    silently dropped in production, so no cluster could ever form.
+    """
+    if MOCK:
+        logger.info("MOCK_MODE=true — skipping observation telemetry write.")
+        return
+
+    # An escalated diagnosis names no disease. Recording "Undetermined" as an
+    # epidemiological data point would pollute the clusters with non-findings.
+    if diagnosis.escalate_to_human:
+        logger.info(f"Skipping telemetry for escalated diagnosis on plot {passport.plot_id}.")
+        return
+
     try:
-        ground_url = "http://localhost:8003/observations"
+        ground_url = f"{GROUND_URL}/observations"
         payload = {
             "geohash": passport.geohash,
             "plot_id": passport.plot_id,
@@ -37,7 +58,8 @@ async def post_observation_telemetry(passport: PlotPassport, diagnosis: Diagnosi
             "is_action_needed": diagnosis.is_action_needed
         }
         async with httpx.AsyncClient(timeout=3.0) as client:
-            await client.post(ground_url, json=payload)
+            res = await client.post(ground_url, json=payload)
+            res.raise_for_status()
             logger.info(f"Telemetry observation posted for plot {passport.plot_id}")
     except Exception as e:
         logger.warning(f"Telemetry write-back skipped (ground service offline/mock): {e}")
@@ -50,8 +72,15 @@ async def diagnose(req: DiagnoseRequest, background_tasks: BackgroundTasks):
     if not passport:
         if req.lat is not None and req.lon is not None:
             passport = await get_plot_passport(req.lat, req.lon)
-        else:
+        elif MOCK:
             passport = MOCK_PASSPORT
+        else:
+            # Silently substituting the Nashik tomato fixture would make Gemini
+            # reason about someone else's plot and report it as this farmer's.
+            raise HTTPException(
+                status_code=400,
+                detail="A passport, or lat/lon to build one from, is required.",
+            )
 
     # 2. Decode image bytes if base64 provided
     image_bytes = None
@@ -61,13 +90,28 @@ async def diagnose(req: DiagnoseRequest, background_tasks: BackgroundTasks):
         except Exception as e:
             logger.warning(f"Failed to decode base64 image: {e}")
     elif req.image_url and not req.image_url.startswith("http://mock"):
-        try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                res = await client.get(req.image_url)
-                if res.status_code == 200:
-                    image_bytes = res.content
-        except Exception as e:
-            logger.warning(f"Failed to fetch image_url {req.image_url}: {e}")
+        if req.image_url.startswith("data:"):
+            # The caller should have stripped the prefix into image_base64.
+            logger.warning("Received a data: URI in image_url — send image_base64 instead.")
+        elif "graph.facebook.com" in req.image_url:
+            # Meta media needs channel's bearer token; brain cannot fetch it.
+            logger.warning("Received a Meta graph URL — channel must download the bytes and send image_base64.")
+        else:
+            try:
+                async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
+                    res = await client.get(req.image_url)
+                    if res.status_code == 200:
+                        image_bytes = res.content
+                    else:
+                        logger.warning(f"image_url returned HTTP {res.status_code}")
+            except Exception as e:
+                logger.warning(f"Failed to fetch image_url {req.image_url}: {e}")
+
+    if not image_bytes and not MOCK:
+        # Without a photo there is nothing to diagnose. Answering from plot
+        # context alone produces a confident disease name from no evidence.
+        logger.error("No image bytes resolved — escalating to human.")
+        return unavailable_diagnosis()
 
     # 3. Fetch nearby outbreaks context
     nearby = []

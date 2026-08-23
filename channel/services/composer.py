@@ -6,6 +6,13 @@ logger = logging.getLogger("channel.composer")
 class AdvisoryComposerService:
     def compose_text_advisory(self, diagnosis: Diagnosis) -> str:
         """Compose a structured, formatted text message for WhatsApp."""
+        # Escalation is a third state, checked before anything else. It is
+        # neither "spray this" nor "you're fine" — rendering it through the
+        # is_action_needed branch would tell a farmer with a real infection
+        # that they need not spray.
+        if diagnosis.escalate_to_human:
+            return self._compose_escalation_text(diagnosis)
+
         status_icon = "⚠️" if diagnosis.is_action_needed else "✅"
         lines = [
             f"🌱 *अन्नदाता सेतु | पिक आरोग्य सल्ला*",
@@ -36,10 +43,34 @@ class AdvisoryComposerService:
 
         return "\n".join(lines)
 
+    def _compose_escalation_text(self, diagnosis: Diagnosis) -> str:
+        """Render an undetermined diagnosis honestly: no dose, no cost, no all-clear."""
+        return "\n".join([
+            "🌱 *अन्नदाता सेतु | पिक आरोग्य सल्ला*",
+            "",
+            "🔍 *निदान (Diagnosis):* अनिश्चित — तपासणी सुरू आहे",
+            "",
+            "🔬 *सल्ला (Action):*",
+            "तुमच्या फोटोवरून आम्ही खात्रीशीर निदान करू शकलो नाही.",
+            "",
+            "⚠️ *कृपया आत्ता कोणतीही फवारणी करू नका.*",
+            "आमचे कृषी तज्ज्ञ तुमचा फोटो तपासून लवकरच सल्ला देतील.",
+            "",
+            "📷 मदतीसाठी: दिवसाच्या उजेडात, प्रभावित पानाचा जवळून स्पष्ट फोटो पुन्हा पाठवा.",
+        ])
+
     def compose_marathi_script(self, diagnosis: Diagnosis) -> str:
         """Compose a direct 4-sentence Marathi spoken voice note script."""
         disease = diagnosis.disease_name
         cost = diagnosis.estimated_cost_inr
+
+        if diagnosis.escalate_to_human:
+            return (
+                "नमस्कार. तुमचा फोटो आम्हाला नीट तपासता आला नाही. "
+                "त्यामुळे आत्ता कोणतीही फवारणी करू नका. "
+                "आमचे कृषी तज्ज्ञ तुमचा फोटो पाहून लवकरच तुम्हाला सल्ला देतील. "
+                "शक्य असल्यास दिवसाच्या उजेडात पानाचा स्पष्ट फोटो पुन्हा पाठवा."
+            )
 
         if not diagnosis.is_action_needed:
             return (
