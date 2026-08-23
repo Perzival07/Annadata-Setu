@@ -1,7 +1,12 @@
 fastapi==0.115.6
 uvicorn==0.34.0
 httpx==0.28.1
-pydantic==2.10.4
+# pydantic 2.10.4 was uninstallable here: google-genai 2.19.0 requires
+# pydantic>=2.12.5, so `pip install -r brain/requirements.txt` failed to resolve
+# and the brain image could not build at all. Kept identical across all three
+# services — contracts/ is shared, and two pydantic versions validating the same
+# frozen models is a difference nobody would think to look for.
+pydantic==2.13.4
 python-dotenv==1.0.1
 earthengine-api==1.4.3
 google-cloud-firestore==2.20.0
