@@ -25,9 +25,20 @@ from typing import Dict, List, NamedTuple, Optional
 
 # Unicode letter ranges per writing system. Digits, punctuation, ₹ and
 # whitespace are script-neutral and belong to nobody.
+#
+# The Devanagari range deliberately EXCLUDES U+0964 and U+0965, the danda and
+# double danda. Unicode files them under Devanagari for historical reasons, but
+# they are the sentence terminators of Bengali, Punjabi, Odia and most other
+# Indic scripts too — Unicode itself documents them as shared. Including them
+# meant a correctly punctuated Bengali sentence ("নমস্কার। আপনার ফসলে…") was
+# judged to contain Devanagari, so every Bengali script Gemini produced was
+# rejected by compose_voice_script and silently downgraded to the local
+# template. The farmer still got Bengali, just the shorter templated kind, and
+# nothing above the debug log said so.
+DANDA = "\u0964\u0965"
 SCRIPT_RANGES = {
-    "devanagari": r"ऀ-ॿ",
-    "bengali": r"ঀ-৿",
+    "devanagari": r"\u0900-\u0963\u0966-\u097f",
+    "bengali": r"\u0980-\u09ff",
     "latin": r"A-Za-z",
 }
 

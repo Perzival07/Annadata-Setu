@@ -112,6 +112,22 @@ class ScriptGuardTest(unittest.TestCase):
         self.assertTrue(has_foreign_script("নমস্কার नमस्कार", "bn"))
         self.assertFalse(has_foreign_script("নমস্কার ভালো", "bn"))
 
+    def test_the_indic_danda_is_shared_punctuation_not_devanagari(self):
+        """U+0964 ends sentences in Bengali as well as Hindi and Marathi.
+
+        Unicode files it under Devanagari, so treating that whole block as
+        foreign to Bengali rejected every correctly punctuated Bengali script
+        Gemini produced — the voice note silently downgraded to the template.
+        """
+        bengali = "নমস্কার। আপনার টমেটো ফসলে আগাম ধসা রোগ দেখা দিয়েছে।"
+        self.assertFalse(has_foreign_script(bengali, "bn"))
+        self.assertEqual(strip_to_speakable(bengali, "bn"), bengali)
+        self.assertFalse(has_foreign_script("नमस्ते। आपकी फसल पर रोग है।", "hi"))
+
+    def test_real_devanagari_is_still_foreign_to_bengali(self):
+        """The danda carve-out must not blind the guard to actual Devanagari."""
+        self.assertTrue(has_foreign_script("নমস্কার আপকী फसल पर", "bn"))
+
     def test_english_is_not_stripped_of_itself(self):
         """The old guard would have deleted every English script entirely."""
         text = "Spray in the evening and avoid overhead irrigation."
