@@ -15,10 +15,13 @@ from contracts.mock_data import DIAGNOSIS as MOCK_DIAGNOSIS
 from contracts.fallbacks import unavailable_diagnosis
 from brain.services.rag import rag_service
 from brain.services.grounding import gather_context
+from brain.services.genai_pool import gemini_pool
 
 logger = logging.getLogger("brain.gemini")
 
 MOCK = os.getenv("MOCK_MODE", "false").lower() == "true"
+# Kept for callers and tests that check it. The pool is the real source of keys
+# and also reads GEMINI_API_KEY_1, _2, ... — see brain/services/genai_pool.py.
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Configurable because a pinned model is a thing that expires. gemini-2.5-flash
@@ -124,16 +127,22 @@ class GeminiService:
         self._init_client()
 
     def _init_client(self):
-        if MOCK or not GEMINI_API_KEY:
-            logger.info("GeminiService initialized in MOCK_MODE or missing API Key.")
+        if MOCK:
+            logger.info("GeminiService initialized in MOCK_MODE.")
             return
 
-        try:
-            from google import genai
-            self.client = genai.Client(api_key=GEMINI_API_KEY)
-            logger.info("Gemini 2.5 Client initialized successfully via google-genai SDK.")
-        except Exception as e:
-            logger.warning(f"Failed to initialize google-genai Client: {e}. Falling back to MOCK mode.")
+        if not gemini_pool.is_available:
+            logger.info("GeminiService has no usable API key.")
+            return
+
+        # `client` is now the pool: same role, but it fails over to another key
+        # when one runs out of quota instead of turning every diagnosis into an
+        # escalation for the rest of the day.
+        self.client = gemini_pool
+        logger.info(
+            f"Gemini client ready via google-genai SDK "
+            f"({gemini_pool.key_count} key(s), model {GEMINI_MODEL})."
+        )
 
     async def diagnose_leaf(
         self,
@@ -232,11 +241,8 @@ class GeminiService:
             # google-genai's generate_content is a blocking HTTP call. Awaiting
             # it directly would freeze the event loop for the full 3-8s of every
             # diagnosis, serialising all concurrent farmers behind one another.
-            response = await asyncio.to_thread(
-                self.client.models.generate_content,
-                model=GEMINI_MODEL,
-                contents=user_content,
-                config=config,
+            response = await self.client.generate(
+                model=GEMINI_MODEL, contents=user_content, config=config
             )
 
             # Parse JSON output into Diagnosis Pydantic model
@@ -327,8 +333,7 @@ class GeminiService:
                 response_mime_type="application/json",
                 response_schema=VoiceScript,
             )
-            response = await asyncio.to_thread(
-                self.client.models.generate_content,
+            response = await self.client.generate(
                 model=GEMINI_MODEL,
                 contents=[
                     f"Compose the spoken {lang.english_name} advisory for: "

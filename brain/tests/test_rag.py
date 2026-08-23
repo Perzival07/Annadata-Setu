@@ -111,9 +111,14 @@ class CitationIntegrationTest(unittest.TestCase):
             "estimated_cost_inr": 340, "urgency_hours": 24, "escalate_to_human": False,
             "reasoning_context": ["x"], "sources": model_sources,
         }
+        class FakePool:
+            """Stands in for the key pool (brain/services/genai_pool.GeminiPool)."""
+
+            async def generate(self, *, model, contents, config):
+                return mock.Mock(text=json.dumps(payload))
+
         svc = GeminiService.__new__(GeminiService)
-        svc.client = mock.Mock()
-        svc.client.models.generate_content.return_value = mock.Mock(text=json.dumps(payload))
+        svc.client = FakePool()
         with mock.patch.object(rag_module.rag_service, "retrieve_context", return_value=rag_docs):
             return asyncio.run(svc.diagnose_leaf(None, b"img", PASSPORT))
 

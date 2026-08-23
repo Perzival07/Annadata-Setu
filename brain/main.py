@@ -52,6 +52,7 @@ def health():
     # invisible: retrieval keeps answering, just with nothing citable behind it.
     from brain.services.rag import rag_service
     from brain.services import grounding
+    from brain.services.genai_pool import gemini_pool
 
     rag = rag_service.status()
     return {
@@ -64,4 +65,7 @@ def health():
         # design. Report it here or nobody can tell whether the grounded
         # diagnosis they think they configured is actually running.
         "gemini_tools": grounding.status(),
+        # How many keys are loaded and which one is currently in use. Only the
+        # last four characters of each, never a usable secret.
+        "gemini_keys": gemini_pool.status(),
     }

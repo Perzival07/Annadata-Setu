@@ -38,9 +38,13 @@ def _response(**overrides):
 
 
 class FakeClient:
+    """Stands in for the key pool (brain/services/genai_pool.GeminiPool)."""
+
     def __init__(self, text):
-        self.models = mock.Mock()
-        self.models.generate_content.return_value = mock.Mock(text=text)
+        self.text = text
+
+    async def generate(self, *, model, contents, config):
+        return mock.Mock(text=self.text)
 
 
 class DiagnosisSafetyTest(unittest.TestCase):

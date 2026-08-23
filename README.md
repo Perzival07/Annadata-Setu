@@ -144,6 +144,31 @@ script its own voice cannot read.
 
 The officer dashboard and the public DPG feed stay English.
 
+## Gemini API keys
+
+`GEMINI_API_KEY`, plus optionally `GEMINI_API_KEY_1`, `_2`, `_3`… They are tried
+in order and the pool moves to the next one on a quota error, sticking with
+whichever key last worked.
+
+This matters because the free tier meters **per key and per model**: a key can be
+exhausted for `gemini-3.6-flash` and still answer on `gemini-3.5-flash`. One key
+runs out partway through a demo; three do not.
+
+Rotation happens only on `429` (quota) and `503` (overload). A `404` means the
+model is retired and a `403` means the key is wrong — trying those on every key
+would just burn the rest to reach the same error.
+
+`GEMINI_MODEL` selects the model (default `gemini-3.6-flash`). It is pinned
+rather than aliased, but configurable: `gemini-2.5-flash` was hardcoded here
+until Google stopped serving it to new keys, at which point every diagnosis
+turned into a silent escalation.
+
+Search grounding needs a **billed** project — on a free key it returns 429 and
+the tool ladder drops to function-calling only, which does work on the free tier.
+
+`/health` on brain reports how many keys are loaded and which is active, showing
+only the last four characters of each.
+
 ## Reverse geocoding (no key required)
 
 A dropped pin becomes a real district, which selects the telemetry fallbacks,

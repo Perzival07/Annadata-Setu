@@ -177,9 +177,21 @@ class GatherLoopTest(unittest.TestCase):
         self.addCleanup(patcher.stop)
 
     def _client(self, replies):
-        client = mock.Mock()
-        client.models.generate_content.side_effect = replies
-        return client
+        """A fake key pool that plays `replies` in order, raising any exception."""
+
+        class FakePool:
+            def __init__(self):
+                self.queue = list(replies)
+                self.calls = 0
+
+            async def generate(self, *, model, contents, config):
+                self.calls += 1
+                item = self.queue.pop(0)
+                if isinstance(item, Exception):
+                    raise item
+                return item
+
+        return FakePool()
 
     def test_returns_notes_when_the_model_stops_calling_tools(self):
         client = self._client([_reply(text="  blight is being reported locally  ")])
@@ -224,7 +236,7 @@ class GatherLoopTest(unittest.TestCase):
             "brain.services.grounding.execute_tool", new=mock.AsyncMock(return_value={})
         ):
             result = run(grounding._run_gather(client, self.types, []))
-        self.assertEqual(client.models.generate_content.call_count, grounding.MAX_TOOL_ROUNDS)
+        self.assertEqual(client.calls, grounding.MAX_TOOL_ROUNDS)
         self.assertTrue(result.is_empty)
 
     def test_rejected_tool_combination_steps_down_the_ladder(self):
@@ -247,7 +259,7 @@ class GatherLoopTest(unittest.TestCase):
             run(grounding._run_gather(client, self.types, []))
         # 2 rejections + MAX_TOOL_ROUNDS real turns.
         self.assertEqual(
-            client.models.generate_content.call_count, 2 + grounding.MAX_TOOL_ROUNDS
+            client.calls, 2 + grounding.MAX_TOOL_ROUNDS
         )
 
     def test_exhausted_ladder_propagates(self):

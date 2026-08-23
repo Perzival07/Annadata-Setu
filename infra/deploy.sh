@@ -28,7 +28,7 @@ if [[ "${MOCK_MODE}" == "true" ]]; then
   [[ "${confirm}" == "y" || "${confirm}" == "Y" ]] || { echo "Aborted."; exit 1; }
 fi
 
-if [[ "${MOCK_MODE}" != "true" && -z "${GEMINI_API_KEY:-}" ]]; then
+if [[ "${MOCK_MODE}" != "true" && -z "${GEMINI_API_KEY:-}${GEMINI_API_KEY_1:-}" ]]; then
   echo "❌ GEMINI_API_KEY is not set. Without it as-brain escalates every"
   echo "   diagnosis to a human instead of answering. Export it and retry."
   exit 1
@@ -92,7 +92,7 @@ echo "   as-ground  → ${GROUND_URL}"
 
 # 2. brain — writes observations back to ground.
 build_and_deploy brain as-brain 8002 \
-  --set-env-vars "MOCK_MODE=${MOCK_MODE},GROUND_URL=${GROUND_URL},GEMINI_API_KEY=${GEMINI_API_KEY:-},ENABLE_GEMINI_TOOLS=${ENABLE_GEMINI_TOOLS:-false},GEMINI_TOOLS_BUDGET_S=${GEMINI_TOOLS_BUDGET_S:-20},GEMINI_MODEL=${GEMINI_MODEL:-}"
+  --set-env-vars "MOCK_MODE=${MOCK_MODE},GROUND_URL=${GROUND_URL},GEMINI_API_KEY=${GEMINI_API_KEY:-},GEMINI_API_KEY_1=${GEMINI_API_KEY_1:-},GEMINI_API_KEY_2=${GEMINI_API_KEY_2:-},GEMINI_API_KEY_3=${GEMINI_API_KEY_3:-},ENABLE_GEMINI_TOOLS=${ENABLE_GEMINI_TOOLS:-false},GEMINI_TOOLS_BUDGET_S=${GEMINI_TOOLS_BUDGET_S:-20},GEMINI_MODEL=${GEMINI_MODEL:-}"
 BRAIN_URL=$(service_url as-brain)
 echo "   as-brain   → ${BRAIN_URL}"
 

@@ -166,11 +166,11 @@ async def _run_gather(client, types, contents: List[Any]) -> GatheredContext:
         )
 
         try:
-            response = await asyncio.to_thread(
-                client.models.generate_content,
-                model=GATHER_MODEL,
-                contents=contents,
-                config=config,
+            # `client` is the key pool: one exhausted key fails over to the next
+            # rather than ending the gather. Rotating mid-conversation is safe —
+            # the history travels in `contents`, so nothing is held server-side.
+            response = await client.generate(
+                model=GATHER_MODEL, contents=contents, config=config
             )
         except Exception as e:
             # Step down the ladder only before the conversation has started:
