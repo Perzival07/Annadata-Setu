@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Annadata Setu">
+  <rect width="64" height="64" rx="14" fill="#1b4332"/>
+  <path d="M32 52V22" stroke="#95d5b2" stroke-width="4" stroke-linecap="round"/>
+  <path d="M32 30c-8 0-13-5-13-12 7 0 13 5 13 12z" fill="#52b788"/>
+  <path d="M32 30c8 0 13-5 13-12-7 0-13 5-13 12z" fill="#74c69d"/>
+  <path d="M32 42c-7 0-11-4-11-10 6 0 11 4 11 10z" fill="#52b788"/>
+  <path d="M32 42c7 0 11-4 11-10-6 0-11 4-11 10z" fill="#74c69d"/>
+</svg>

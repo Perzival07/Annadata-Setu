@@ -13,7 +13,7 @@ export default function DashboardPage() {
         📊 District Agriculture Officer Dashboard
       </h2>
       <p style={{ color: '#555', fontSize: '0.95rem' }}>
-        BigQuery $\rightarrow$ Looker Studio real-time executive surveillance dashboard.
+        BigQuery → Looker Studio real-time executive surveillance dashboard.
       </p>
 
       <div style={{
