@@ -48,18 +48,29 @@ async def get_nearby_outbreaks(lat: float, lon: float) -> list[Outbreak]:
         return [Outbreak(**item) for item in res.json()]
 
 
-async def compose_marathi_script(diagnosis: Diagnosis, passport: PlotPassport | None = None) -> str | None:
-    """Ask brain for the spoken Marathi advisory.
+async def compose_voice_script(
+    diagnosis: Diagnosis,
+    passport: PlotPassport | None = None,
+    language: str = "mr",
+) -> str | None:
+    """Ask brain for the spoken advisory in `language`.
 
     Returns None when unavailable — the caller must then use its own
-    Marathi-only template rather than speaking a part-English script.
+    single-script template rather than speaking a mixed-script one.
     """
     if MOCK:
         return None
-    payload = {"diagnosis": diagnosis.model_dump()}
+    payload = {"diagnosis": diagnosis.model_dump(), "language": language}
     if passport:
         payload["passport"] = passport.model_dump()
     async with httpx.AsyncClient(timeout=20.0) as client:
         res = await client.post(f"{BRAIN_URL}/advisory-script", json=payload)
         res.raise_for_status()
         return res.json().get("script")
+
+
+async def compose_marathi_script(
+    diagnosis: Diagnosis, passport: PlotPassport | None = None
+) -> str | None:
+    """compose_voice_script pinned to Marathi. Kept for existing callers."""
+    return await compose_voice_script(diagnosis, passport, "mr")

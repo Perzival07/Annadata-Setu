@@ -2,140 +2,143 @@ import logging
 from typing import Optional
 
 from contracts.models import Diagnosis
-from channel.services.marathi import (
-    disease_in_marathi,
-    dosage_in_marathi,
-    has_latin_script,
+from contracts.languages import (
+    DEFAULT_LANGUAGE,
+    get,
+    has_foreign_script,
+    localize_digits,
     strip_to_speakable,
-    to_devanagari_digits,
 )
+from channel.services.phrasebook import label, phrases, voice
+from channel.services.render import disease_name, dosage_phrase
 
 logger = logging.getLogger("channel.composer")
 
+
 class AdvisoryComposerService:
-    def compose_text_advisory(self, diagnosis: Diagnosis) -> str:
-        """Compose a structured, formatted text message for WhatsApp."""
+    def compose_text_advisory(
+        self, diagnosis: Diagnosis, code: str = DEFAULT_LANGUAGE
+    ) -> str:
+        """The structured WhatsApp message, in the farmer's language.
+
+        Unlike the voice script this may carry Latin script even in a
+        non-Latin language: the disease name and the dose are read, not spoken,
+        and the farmer needs the exact strings to buy the right product. That
+        is the division of labour — precision here, speakability in the voice.
+        """
         # Escalation is a third state, checked before anything else. It is
         # neither "spray this" nor "you're fine" — rendering it through the
         # is_action_needed branch would tell a farmer with a real infection
         # that they need not spray.
         if diagnosis.escalate_to_human:
-            return self._compose_escalation_text(diagnosis)
+            return phrases(code)["escalation_text"]
 
         status_icon = "⚠️" if diagnosis.is_action_needed else "✅"
         lines = [
-            f"🌱 *अन्नदाता सेतु | पिक आरोग्य सल्ला*",
-            f"",
-            f"🔍 *निदान (Diagnosis):* {diagnosis.disease_name}",
-            f"📊 *विश्वासार्हता (Confidence):* {int(diagnosis.confidence * 100)}%",
-            f""
+            label("header", code),
+            "",
+            f"{label('diagnosis', code)} {diagnosis.disease_name}",
+            f"{label('confidence', code)} {int(diagnosis.confidence * 100)}%",
+            "",
         ]
 
         if diagnosis.reasoning_context:
-            lines.append("📋 *विश्लेषण (Context):*")
+            lines.append(label("context", code))
             for ctx in diagnosis.reasoning_context:
                 lines.append(f"  • {ctx}")
             lines.append("")
 
-        lines.append(f"{status_icon} *सल्ला (Action):*")
+        lines.append(f"{status_icon} {label('action', code)}")
         lines.append(diagnosis.action_text)
 
         if diagnosis.is_action_needed and diagnosis.dosage:
-            lines.append(f"💊 *प्रमाण (Dosage):* {diagnosis.dosage}")
-            lines.append(f"💰 *अंदाजे खर्च:* ₹{diagnosis.estimated_cost_inr}")
-            lines.append(f"⏳ *कालावधी:* {diagnosis.urgency_hours} तासांच्या आत")
+            lines.append(f"{label('dosage', code)} {diagnosis.dosage}")
+            lines.append(f"{label('cost', code)} ₹{diagnosis.estimated_cost_inr}")
+            lines.append(label("urgency", code).format(hours=diagnosis.urgency_hours))
         else:
-            lines.append("🎉 *फवारणीची गरज नाही — खताचा/औषधाचा अनावश्यक खर्च वाचवा.*")
+            lines.append(label("no_spray", code))
 
         if diagnosis.sources:
-            lines.append(f"\n📚 *संदर्भ:* {', '.join(diagnosis.sources)}")
+            lines.append(f"\n{label('sources', code)} {', '.join(diagnosis.sources)}")
 
         return "\n".join(lines)
 
-    def _compose_escalation_text(self, diagnosis: Diagnosis) -> str:
-        """Render an undetermined diagnosis honestly: no dose, no cost, no all-clear."""
-        return "\n".join([
-            "🌱 *अन्नदाता सेतु | पिक आरोग्य सल्ला*",
-            "",
-            "🔍 *निदान (Diagnosis):* अनिश्चित — तपासणी सुरू आहे",
-            "",
-            "🔬 *सल्ला (Action):*",
-            "तुमच्या फोटोवरून आम्ही खात्रीशीर निदान करू शकलो नाही.",
-            "",
-            "⚠️ *कृपया आत्ता कोणतीही फवारणी करू नका.*",
-            "आमचे कृषी तज्ज्ञ तुमचा फोटो तपासून लवकरच सल्ला देतील.",
-            "",
-            "📷 मदतीसाठी: दिवसाच्या उजेडात, प्रभावित पानाचा जवळून स्पष्ट फोटो पुन्हा पाठवा.",
-        ])
-
-    def compose_marathi_script(
-        self, diagnosis: Diagnosis, action_mr: Optional[str] = None
+    def compose_voice_script(
+        self,
+        diagnosis: Diagnosis,
+        code: str = DEFAULT_LANGUAGE,
+        action_translated: Optional[str] = None,
     ) -> str:
-        """Marathi-only spoken script.
+        """Spoken script in the farmer's language, in that language's script only.
 
-        This is the FALLBACK. The primary path asks brain to generate Marathi
+        This is the FALLBACK. The primary path asks brain to generate the script
         directly (BRAIN.md §11, 15:30) — see pipeline.py. This template runs when
-        brain is unreachable, and its one hard requirement is that nothing Latin
-        reaches the mr-IN voice: the previous version interpolated the English
-        disease_name, action_text and dosage straight in, so ~45% of the spoken
-        script was English read aloud by a Marathi voice.
+        brain is unreachable, and its one hard requirement is that nothing in a
+        foreign script reaches the voice: the original version interpolated the
+        English disease_name, action_text and dosage straight in, so ~45% of the
+        spoken script was English read aloud by a Marathi voice.
 
-        Where a value cannot be rendered in Marathi it is omitted. The WhatsApp
-        text message still carries the precise English name and dose.
+        "Foreign" is relative to `code` — Latin for Marathi, Hindi and Bengali;
+        Devanagari and Bengali for English. Where a value cannot be rendered it
+        is omitted, and the text message still carries it exactly.
 
-        `action_mr` is the farmer-facing instruction already rendered in Marathi
-        — Cloud Translate's output, vetted by channel/services/translate.py. It
-        is optional by design: the biggest thing this template drops is
-        action_text, and when translation is off or its output was not speakable
-        the script is exactly what it was before. Callers must never pass raw
-        English here; everything on this path reaches an mr-IN voice.
+        `action_translated` is the farmer-facing instruction already rendered in
+        this language — Cloud Translate's output, vetted by translate.py, or
+        action_text itself when the target is English. Callers must never pass
+        raw English here for a non-Latin language.
         """
-        if diagnosis.escalate_to_human:
-            return (
-                "नमस्कार. तुमचा फोटो आम्हाला नीट तपासता आला नाही. "
-                "त्यामुळे आत्ता कोणतीही फवारणी करू नका. "
-                "आमचे कृषी तज्ज्ञ तुमचा फोटो पाहून लवकरच तुम्हाला सल्ला देतील. "
-                "शक्य असल्यास दिवसाच्या उजेडात पानाचा स्पष्ट फोटो पुन्हा पाठवा."
-            )
+        lang = get(code)
 
-        disease_mr = disease_in_marathi(diagnosis.disease_name)
-        # No safe Marathi rendering: name the symptom generically rather than
-        # speaking an English disease name mid-sentence.
-        subject = f"{disease_mr} दिसत आहे" if disease_mr else "रोगाची लक्षणे दिसत आहेत"
-        cost_mr = to_devanagari_digits(str(diagnosis.estimated_cost_inr or 0))
+        if diagnosis.escalate_to_human:
+            return voice("escalation", lang.code)
+
+        rendered = disease_name(diagnosis.disease_name, lang.code)
+        # No safe rendering: name the symptom generically rather than speaking a
+        # foreign-script disease name mid-sentence.
+        subject = (
+            voice("subject_known", lang.code).format(disease=rendered)
+            if rendered
+            else voice("subject_unknown", lang.code)
+        )
 
         # A translated instruction goes in as its own sentence rather than
         # replacing a template line, so the guarantees the template already
         # makes about dose and cost are untouched by it.
-        advice = f"{action_mr.rstrip('.')}. " if action_mr else ""
+        advice = f"{action_translated.rstrip('.')}. " if action_translated else ""
 
         if not diagnosis.is_action_needed:
-            saved = to_devanagari_digits(str(diagnosis.estimated_cost_inr or 500))
-            script = (
-                f"नमस्कार. तुमच्या पिकावर {subject}. "
-                "ही रोगाची लागण नसून अन्नद्रव्यांची कमतरता आहे. "
-                f"{advice}"
-                "त्यामुळे कोणतीही रासायनिक फवारणी करण्याची गरज नाही. "
-                f"यामुळे तुमचे अंदाजे ₹{saved} वाचतील."
+            saved = localize_digits(str(diagnosis.estimated_cost_inr or 500), lang.code)
+            script = voice("dont_spray", lang.code).format(
+                subject=subject, advice=advice, saved=saved
             )
-            return strip_to_speakable(script) if has_latin_script(script) else script
+            return self._guard(script, lang.code)
 
-        dosage_mr = dosage_in_marathi(diagnosis.dosage)
-        dose_sentence = (
-            f"{dosage_mr} या प्रमाणात मिसळून फवारणी करा. "
-            if dosage_mr else
-            "औषधाच्या पाकिटावर दिलेल्या प्रमाणानुसार फवारणी करा. "
+        dose_rendered = dosage_phrase(diagnosis.dosage, lang.code)
+        dose = (
+            voice("dose_known", lang.code).format(dosage=dose_rendered)
+            if dose_rendered
+            else voice("dose_unknown", lang.code)
         )
-        hours_mr = to_devanagari_digits(str(diagnosis.urgency_hours or 24))
-        script = (
-            f"नमस्कार. तुमच्या पिकावर {subject}. "
-            "हवामानातील आर्द्रतेमुळे याचा प्रसार वेगाने होऊ शकतो. "
-            f"{advice}"
-            f"{dose_sentence}"
-            f"याचा अंदाजे खर्च ₹{cost_mr} येईल आणि ही फवारणी पुढील {hours_mr} तासांत पूर्ण करा."
+        script = voice("treatment", lang.code).format(
+            subject=subject,
+            advice=advice,
+            dose=dose,
+            cost=localize_digits(str(diagnosis.estimated_cost_inr or 0), lang.code),
+            hours=localize_digits(str(diagnosis.urgency_hours or 24), lang.code),
         )
-        # Belt and braces: nothing Latin may reach the voice engine.
-        return strip_to_speakable(script) if has_latin_script(script) else script
+        return self._guard(script, lang.code)
+
+    @staticmethod
+    def _guard(script: str, code: str) -> str:
+        """Belt and braces: nothing in a foreign script may reach the voice."""
+        return strip_to_speakable(script, code) if has_foreign_script(script, code) else script
+
+    # Kept because channel/tests/test_marathi.py and older callers use this name.
+    def compose_marathi_script(
+        self, diagnosis: Diagnosis, action_mr: Optional[str] = None
+    ) -> str:
+        """compose_voice_script pinned to Marathi."""
+        return self.compose_voice_script(diagnosis, DEFAULT_LANGUAGE, action_mr)
 
 
 composer_service = AdvisoryComposerService()

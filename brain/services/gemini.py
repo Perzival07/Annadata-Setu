@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 from contracts.models import Diagnosis, PlotPassport
+from contracts.languages import DEFAULT_LANGUAGE, get, has_foreign_script
 from contracts.mock_data import DIAGNOSIS as MOCK_DIAGNOSIS
 # Shared with channel/ — the same honest failure value must reach the farmer
 # whether Gemini failed here or brain was unreachable from the pipeline.
@@ -49,18 +50,24 @@ _FALLBACK_SYSTEM_INSTRUCTION = (
 _prompt_cache: Dict[str, str] = {}
 
 
-class MarathiScript(BaseModel):
+class VoiceScript(BaseModel):
     """Schema-locked wrapper. BRAIN.md §7 requires a response schema on every
     Gemini call — we take a structured field, never regex over prose."""
     script: str
 
 
-_FALLBACK_MARATHI_INSTRUCTION = (
-    "Convert the structured Diagnosis into a spoken Marathi advisory for a smallholder farmer.\n"
+# Kept for callers importing the old name.
+MarathiScript = VoiceScript
+
+
+_FALLBACK_VOICE_INSTRUCTION = (
+    "Convert the structured Diagnosis into a spoken advisory for a smallholder Indian farmer, in "
+    "the target language named in the input context.\n"
     "Four short sentences: what the crop has, why (weather/stage), what to do, cost and urgency.\n"
-    "Write ONLY in Marathi (Devanagari). Do not use any English words or Latin script — the text is "
-    "read aloud by a Marathi voice and Latin script is mispronounced. Translate disease names into "
-    "Marathi, and write numbers in Devanagari digits.\n"
+    "Write ONLY in the target language, in its own script. Text in any other script is read aloud "
+    "by that language's voice and comes out as noise. Translate disease names into the target "
+    "language, drop Latin botanical binomials entirely, and write numbers in that language's "
+    "digits (English keeps ASCII digits).\n"
     "If escalate_to_human is true, say the photo could not be assessed, tell them clearly NOT to "
     "spray, and that an expert will review it. Never state a dose in that case."
 )
@@ -258,29 +265,39 @@ class GeminiService:
             logger.error(f"Gemini diagnosis failed, escalating to human: {e}", exc_info=True)
             return unavailable_diagnosis()
 
-    async def compose_marathi_script(
+    async def compose_voice_script(
         self,
         diagnosis: Diagnosis,
         passport: Optional[PlotPassport] = None,
+        language: str = DEFAULT_LANGUAGE,
     ) -> Optional[str]:
-        """Generate the spoken Marathi advisory directly (BRAIN.md §11, 15:30).
+        """Generate the spoken advisory directly in `language` (BRAIN.md §11, 15:30).
 
-        Asking the model for Marathi beats translating: the previous approach
-        interpolated English Diagnosis fields into Marathi sentence frames, so
-        the mr-IN voice had to read an English sentence aloud.
+        Asking the model for the target language beats translating: the original
+        approach interpolated English Diagnosis fields into Marathi sentence
+        frames, so the mr-IN voice had to read an English sentence aloud.
 
         Returns None when generation is unavailable or the result is not usable,
-        so the caller falls back to its own Marathi-only template rather than
+        so the caller falls back to its own single-script template rather than
         speaking something wrong.
         """
         if MOCK or not self.client:
             return None
 
+        lang = get(language)
+
         try:
             from google.genai import types
 
-            system_instruction = load_prompt("reply_marathi.md", _FALLBACK_MARATHI_INSTRUCTION)
+            system_instruction = load_prompt("reply_voice.md", _FALLBACK_VOICE_INSTRUCTION)
             context = {
+                # First key, so the constraint the model most often breaks is
+                # the first thing it reads.
+                "target_language": {
+                    "code": lang.code,
+                    "name": lang.english_name,
+                    "script": lang.script,
+                },
                 "diagnosis": diagnosis.model_dump(),
                 "plot": {
                     "district": passport.district if passport else None,
@@ -294,12 +311,15 @@ class GeminiService:
                 system_instruction=system_instruction,
                 temperature=0.3,
                 response_mime_type="application/json",
-                response_schema=MarathiScript,
+                response_schema=VoiceScript,
             )
             response = await asyncio.to_thread(
                 self.client.models.generate_content,
                 model="gemini-2.5-flash",
-                contents=[f"Compose the spoken Marathi advisory for: {json.dumps(context, ensure_ascii=False)}"],
+                contents=[
+                    f"Compose the spoken {lang.english_name} advisory for: "
+                    f"{json.dumps(context, ensure_ascii=False)}"
+                ],
                 config=config,
             )
             raw = response.text
@@ -309,15 +329,27 @@ class GeminiService:
 
             if not script:
                 raise ValueError("model returned no script")
-            # The whole point is a speakable mr-IN script. If Latin script came
-            # back anyway, reject it rather than hand it to the voice engine.
-            if re.search(r"[A-Za-z]{3,}", script):
-                raise ValueError(f"script still contains Latin script: {script[:80]!r}")
+            # The whole point is a script the target voice can speak. If another
+            # script came back anyway, reject it rather than hand it to the voice
+            # engine. What counts as foreign is relative to the target: Latin for
+            # Marathi, Hindi and Bengali; Devanagari and Bengali for English.
+            if has_foreign_script(script, lang.code):
+                raise ValueError(
+                    f"script contains text a {lang.bcp47} voice cannot read: {script[:80]!r}"
+                )
 
             return script
         except Exception as e:
-            logger.warning(f"Marathi script generation failed, caller will use its template: {e}")
+            logger.warning(f"Voice script generation failed, caller will use its template: {e}")
             return None
+
+    async def compose_marathi_script(
+        self,
+        diagnosis: Diagnosis,
+        passport: Optional[PlotPassport] = None,
+    ) -> Optional[str]:
+        """compose_voice_script pinned to Marathi. Kept for existing callers."""
+        return await self.compose_voice_script(diagnosis, passport, DEFAULT_LANGUAGE)
 
 
 gemini_service = GeminiService()

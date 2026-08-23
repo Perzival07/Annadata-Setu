@@ -37,6 +37,33 @@ class UserStateService:
         """Read and clear the note — it belongs to one diagnosis, not to all of them."""
         return self.user_sessions.get(phone, {}).pop("pending_note", None)
 
+    def set_user_language(self, phone: str, code: str):
+        """Record a language the farmer explicitly chose.
+
+        Explicit beats everything: it is the only layer that reflects a decision
+        rather than an inference, so it is never overwritten by detection.
+        """
+        self.user_sessions.setdefault(phone, {})["language"] = code
+
+    def get_user_language(self, phone: str) -> Optional[str]:
+        """The language the farmer chose, or None if they never chose one."""
+        return self.user_sessions.get(phone, {}).get("language")
+
+    def set_detected_language(self, phone: str, code: str):
+        """Remember what the farmer's own message sounded like.
+
+        Kept separate from the chosen language and never promoted to it. It also
+        has to persist: a farmer who sends a Hindi voice note and then a bare
+        photo should get a Hindi reply to the photo, and the photo carries no
+        language signal of its own.
+        """
+        if not code:
+            return
+        self.user_sessions.setdefault(phone, {})["detected_language"] = code
+
+    def get_detected_language(self, phone: str) -> Optional[str]:
+        return self.user_sessions.get(phone, {}).get("detected_language")
+
     def get_user_location(self, phone: str) -> Optional[tuple[float, float]]:
         """Retrieve last known coordinates for farmer."""
         session = self.user_sessions.get(phone, {})

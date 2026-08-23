@@ -100,7 +100,8 @@ The ChromaDB store is committed, so this is only needed after changing the PDFs:
 ```bash
 .venv/bin/python -m unittest brain.tests.test_schema brain.tests.test_rag \
   brain.tests.test_tools channel.tests.smoke channel.tests.test_marathi \
-  channel.tests.test_google_services ground.tests.test_cluster ground.tests.test_geocode
+  channel.tests.test_google_services channel.tests.test_languages \
+  ground.tests.test_cluster ground.tests.test_geocode
 ```
 
 ## Gemini tool use

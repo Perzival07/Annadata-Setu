@@ -2,7 +2,11 @@ import React from 'react';
 
 export default function DiagnosisCard({ data }) {
   if (!data) return null;
-  const { diagnosis, passport, formatted_text, marathi_script } = data;
+  const { diagnosis, passport, formatted_text, voice_script, marathi_script, language } = data;
+  // voice_script is the current field; marathi_script is its deprecated alias.
+  const spokenScript = voice_script || marathi_script;
+  const LANGUAGE_NAMES = { mr: 'Marathi', hi: 'Hindi', bn: 'Bengali', en: 'English' };
+  const spokenLanguage = LANGUAGE_NAMES[language] || 'Marathi';
 
   // Escalation is a third state, resolved before anything else. It is neither
   // "spray this" nor "you're fine" — rendering it through is_action_needed
@@ -83,11 +87,11 @@ export default function DiagnosisCard({ data }) {
         )}
       </div>
 
-      {marathi_script && (
+      {spokenScript && (
         <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '10px' }}>
-          <h4 style={{ margin: '0 0 6px 0', color: '#e65100' }}>🗣️ Spoken Audio Advisory (Marathi Script):</h4>
+          <h4 style={{ margin: '0 0 6px 0', color: '#e65100' }}>🗣️ Spoken Audio Advisory ({spokenLanguage}):</h4>
           <p style={{ margin: 0, fontStyle: 'italic', color: '#bf360c', fontSize: '0.95rem' }}>
-            "{marathi_script}"
+            "{spokenScript}"
           </p>
         </div>
       )}

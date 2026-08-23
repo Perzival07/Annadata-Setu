@@ -42,17 +42,22 @@ class FakeInbound:
 
 
 class FakeTTS:
-    async def synthesize_speech(self, text):
+    def __init__(self):
+        self.spoken = []
+
+    async def synthesize_speech(self, text, language_code="mr-IN"):
+        self.spoken.append((language_code, text))
         return b"OggS_fake"
 
 
 class ChannelPipelineTest(unittest.TestCase):
     def setUp(self):
         self.out = FakeOutbound()
+        self.tts = FakeTTS()
         self.patches = [
             mock.patch.object(pipeline, "whatsapp_out_service", self.out),
             mock.patch.object(pipeline, "whatsapp_in_service", FakeInbound()),
-            mock.patch.object(pipeline, "tts_service", FakeTTS()),
+            mock.patch.object(pipeline, "tts_service", self.tts),
         ]
         for p in self.patches:
             p.start()

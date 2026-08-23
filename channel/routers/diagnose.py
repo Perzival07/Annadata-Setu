@@ -11,8 +11,10 @@ from channel.services.tts import tts_service
 from channel.services.pipeline import (
     _resolve_passport,
     _resolve_diagnosis as _pipeline_diagnosis,
-    resolve_marathi_script,
+    resolve_language,
+    resolve_voice_script,
 )
+from contracts.languages import DEFAULT_LANGUAGE, get
 
 logger = logging.getLogger("channel.router.diagnose")
 
@@ -25,11 +27,19 @@ class PWADiagnoseRequest(BaseModel):
     image_base64: Optional[str] = None
     lat: float = 19.9975
     lon: float = 73.7898
+    # The PWA has no phone number to hang a preference on, so it names the
+    # language outright. Unset means Marathi, as before.
+    language: Optional[str] = None
 
 class PWADiagnoseResponse(BaseModel):
     diagnosis: Diagnosis
     passport: PlotPassport
     formatted_text: str
+    voice_script: str
+    language: str = DEFAULT_LANGUAGE
+    # Deprecated alias, same value as voice_script. Kept because the PWA and any
+    # other client already read this name; a field called marathi_script holding
+    # Bengali would be worse than a field marked deprecated.
     marathi_script: str
 
 @router.post("/diagnose", response_model=PWADiagnoseResponse)
@@ -44,15 +54,23 @@ async def pwa_diagnose(req: PWADiagnoseRequest):
     # 2. Diagnosis — on failure this is an honest escalation, never the fixture.
     diagnosis = await _resolve_diagnosis(req.image_base64, req.image_url, passport)
 
-    # 3. Compose text and voice script
-    formatted_text = composer_service.compose_text_advisory(diagnosis)
-    marathi_script = await resolve_marathi_script(diagnosis, passport)
+    # 3. Resolve the language. The PWA has no phone number, so an explicit
+    # request wins and otherwise the plot's state decides.
+    code = get(req.language).code if req.language else await resolve_language(
+        "", passport=passport
+    )
+
+    # 4. Compose text and voice script
+    formatted_text = composer_service.compose_text_advisory(diagnosis, code)
+    voice_script = await resolve_voice_script(diagnosis, passport, code)
 
     return PWADiagnoseResponse(
         diagnosis=diagnosis,
         passport=passport,
         formatted_text=formatted_text,
-        marathi_script=marathi_script
+        voice_script=voice_script,
+        language=code,
+        marathi_script=voice_script,
     )
 
 

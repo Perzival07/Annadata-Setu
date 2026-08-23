@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 
 from contracts.models import Diagnosis, PlotPassport
+from contracts.languages import DEFAULT_LANGUAGE, get
 from contracts.client import get_plot_passport, get_nearby_outbreaks
 from contracts.mock_data import PASSPORT as MOCK_PASSPORT
 from contracts.fallbacks import unavailable_diagnosis
@@ -143,23 +144,33 @@ async def diagnose(req: DiagnoseRequest, background_tasks: BackgroundTasks):
 class AdvisoryScriptRequest(BaseModel):
     diagnosis: Diagnosis
     passport: Optional[PlotPassport] = None
+    # Defaults to Marathi so a caller that predates multi-language support gets
+    # exactly what it got before.
+    language: str = DEFAULT_LANGUAGE
 
 
 class AdvisoryScriptResponse(BaseModel):
     script: Optional[str] = None
-    language: str = "mr"
+    language: str = DEFAULT_LANGUAGE
     generated_by: str  # "gemini" | "unavailable"
 
 
 @router.post("/advisory-script", response_model=AdvisoryScriptResponse)
 async def advisory_script(req: AdvisoryScriptRequest):
-    """Spoken Marathi advisory, generated rather than translated (BRAIN.md §11).
+    """Spoken advisory in the farmer's language, generated rather than translated
+    (BRAIN.md §11).
 
     Returns script=None when generation is unavailable, so the caller falls back
-    to its own Marathi-only template instead of speaking something wrong.
+    to its own single-script template instead of speaking something wrong. The
+    echoed `language` is the one actually used — an unsupported code resolves to
+    the default rather than erroring, and the caller needs to know which it got.
     """
-    script = await gemini_service.compose_marathi_script(req.diagnosis, req.passport)
+    lang = get(req.language)
+    script = await gemini_service.compose_voice_script(
+        req.diagnosis, req.passport, lang.code
+    )
     return AdvisoryScriptResponse(
         script=script,
+        language=lang.code,
         generated_by="gemini" if script else "unavailable",
     )

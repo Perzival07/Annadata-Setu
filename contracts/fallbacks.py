@@ -7,6 +7,12 @@ another's modules. This is additive — no frozen field is renamed or dropped.
 
 from contracts.models import Diagnosis, PlotPassport
 
+# The placeholder district/state on a passport built with no telemetry. Exported
+# because consumers must be able to tell "we could not find out where this is"
+# apart from a real place name — see channel/services/pipeline.resolve_language,
+# which would otherwise treat "Unknown" as a state it simply has no mapping for.
+UNKNOWN_PLACE = "Unknown"
+
 
 def unavailable_diagnosis() -> Diagnosis:
     """A Diagnosis that admits it has no diagnosis.
@@ -54,8 +60,8 @@ def context_unavailable_passport(lat: float, lon: float, geohash: str, plot_id: 
         lat=lat,
         lon=lon,
         geohash=geohash,
-        district="Unknown",
-        state="Unknown",
+        district=UNKNOWN_PLACE,
+        state=UNKNOWN_PLACE,
         ndvi_series=[],
         inferred_crop="Unknown",
         crop_stage_days=0,
