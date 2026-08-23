@@ -48,25 +48,61 @@ class GeoService:
                     ch = 0
             return "".join(geohash)
 
+    def decode_bbox(self, geohash: str) -> Tuple[float, float, float, float]:
+        """Decode a geohash into its bounding box (lat_min, lat_max, lon_min, lon_max)."""
+        lat_range = [-90.0, 90.0]
+        lon_range = [-180.0, 180.0]
+        is_even = True
+        for ch in geohash:
+            idx = BASE32.find(ch)
+            if idx == -1:
+                break
+            for mask in (16, 8, 4, 2, 1):
+                if is_even:
+                    mid = (lon_range[0] + lon_range[1]) / 2
+                    if idx & mask:
+                        lon_range[0] = mid
+                    else:
+                        lon_range[1] = mid
+                else:
+                    mid = (lat_range[0] + lat_range[1]) / 2
+                    if idx & mask:
+                        lat_range[0] = mid
+                    else:
+                        lat_range[1] = mid
+                is_even = not is_even
+        return (lat_range[0], lat_range[1], lon_range[0], lon_range[1])
+
     def get_adjacent_cells(self, geohash_prefix: str) -> List[str]:
+        """Self + the 8 true geohash neighbours, so a cluster straddling a cell
+        boundary is not missed (BRAIN.md §11, 12:00).
+
+        Geohash adjacency is not arithmetic on the last character. Base32 walks a
+        Z-order curve, so the cell east of `tes3z` is `tes9b` — a different stem
+        entirely — while `tes30` and `tes31`, which nudging the last character
+        produces, sit nowhere near it. Stepping one cell width in real coordinates
+        and re-encoding gets the actual neighbours at any precision.
         """
-        Retrieve self + 8 adjacent geohash prefix cells to handle boundary-straddling clusters.
-        """
-        # For precision 5 (~5km cell size), return surrounding grid variations
-        if len(geohash_prefix) < 2:
-            return [geohash_prefix]
+        if not geohash_prefix:
+            return []
 
-        neighbors = [geohash_prefix]
-        last_char = geohash_prefix[-1]
-        prefix_stem = geohash_prefix[:-1]
+        precision = len(geohash_prefix)
+        lat_min, lat_max, lon_min, lon_max = self.decode_bbox(geohash_prefix)
+        lat_c = (lat_min + lat_max) / 2
+        lon_c = (lon_min + lon_max) / 2
+        lat_step = lat_max - lat_min
+        lon_step = lon_max - lon_min
 
-        idx = BASE32.find(last_char)
-        if idx != -1:
-            for offset in [-2, -1, 1, 2]:
-                neighbor_idx = (idx + offset) % len(BASE32)
-                neighbors.append(prefix_stem + BASE32[neighbor_idx])
+        neighbours = set()
+        for dlat in (-1, 0, 1):
+            for dlon in (-1, 0, 1):
+                lat = max(-90.0, min(90.0, lat_c + dlat * lat_step))
+                lon = lon_c + dlon * lon_step
+                # Wrap across the antimeridian rather than clamping.
+                lon = ((lon + 180.0) % 360.0) - 180.0
+                neighbours.add(self.encode(lat, lon, precision))
 
-        return list(set(neighbors))
+        return sorted(neighbours)
 
     def haversine_distance(self, lat1: float, lon1: float, lat2: float, lon2: float) -> float:
         """Calculate great-circle distance between two points in kilometers."""

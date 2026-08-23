@@ -2,337 +2,421 @@
   {
     "plot_id": "plot_silent_ring_1",
     "farmer_phone": "919876501000",
-    "lat": 19.8975,
-    "lon": 73.83,
+    "lat": 20.06294,
+    "lon": 73.79091,
+    "geohash": "tes6phk",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 7.29
   },
   {
     "plot_id": "plot_silent_ring_2",
     "farmer_phone": "919876501001",
-    "lat": 20.0655,
-    "lon": 73.9042,
+    "lat": 20.05684,
+    "lon": 73.79796,
+    "geohash": "tes6p74",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 6.66
   },
   {
     "plot_id": "plot_silent_ring_3",
     "farmer_phone": "919876501002",
-    "lat": 20.0555,
-    "lon": 73.7446,
+    "lat": 20.03658,
+    "lon": 73.80325,
+    "geohash": "tes3zrt",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 4.57
   },
   {
     "plot_id": "plot_silent_ring_4",
     "farmer_phone": "919876501003",
-    "lat": 19.9799,
-    "lon": 73.6884,
+    "lat": 20.07661,
+    "lon": 73.8276,
+    "geohash": "tes6pyz",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 9.65
   },
   {
     "plot_id": "plot_silent_ring_5",
     "farmer_phone": "919876501004",
-    "lat": 20.0267,
-    "lon": 73.7011,
+    "lat": 20.02688,
+    "lon": 73.81208,
+    "geohash": "tes3ztu",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 4.02
   },
   {
     "plot_id": "plot_silent_ring_6",
     "farmer_phone": "919876501005",
-    "lat": 20.0201,
-    "lon": 73.7736,
+    "lat": 20.05295,
+    "lon": 73.84856,
+    "geohash": "tesd06w",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 8.71
   },
   {
     "plot_id": "plot_silent_ring_7",
     "farmer_phone": "919876501006",
-    "lat": 20.0043,
-    "lon": 73.7154,
+    "lat": 20.01573,
+    "lon": 73.81451,
+    "geohash": "tes3zey",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 3.29
   },
   {
     "plot_id": "plot_silent_ring_8",
     "farmer_phone": "919876501007",
-    "lat": 19.9881,
-    "lon": 73.798,
+    "lat": 20.03262,
+    "lon": 73.86259,
+    "geohash": "tes9byc",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 8.56
   },
   {
     "plot_id": "plot_silent_ring_9",
     "farmer_phone": "919876501008",
-    "lat": 20.01,
-    "lon": 73.7741,
+    "lat": 20.03644,
+    "lon": 73.89728,
+    "geohash": "tes9cxd",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 12.05
   },
   {
     "plot_id": "plot_silent_ring_10",
     "farmer_phone": "919876501009",
-    "lat": 19.97,
-    "lon": 73.7038,
+    "lat": 20.00614,
+    "lon": 73.82253,
+    "geohash": "tes3zf5",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 3.56
   },
   {
     "plot_id": "plot_silent_ring_11",
     "farmer_phone": "919876501010",
-    "lat": 20.0524,
-    "lon": 73.7941,
+    "lat": 20.01237,
+    "lon": 73.91975,
+    "geohash": "tes9f54",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 13.69
   },
   {
     "plot_id": "plot_silent_ring_12",
     "farmer_phone": "919876501011",
-    "lat": 19.9269,
-    "lon": 73.8185,
+    "lat": 19.99392,
+    "lon": 73.89026,
+    "geohash": "tes99rv",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 10.52
   },
   {
     "plot_id": "plot_silent_ring_13",
     "farmer_phone": "919876501012",
-    "lat": 19.9015,
-    "lon": 73.9061,
+    "lat": 19.97435,
+    "lon": 73.9166,
+    "geohash": "tes9dh0",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 13.51
   },
   {
     "plot_id": "plot_silent_ring_14",
     "farmer_phone": "919876501013",
-    "lat": 20.078,
-    "lon": 73.751,
+    "lat": 19.97051,
+    "lon": 73.8723,
+    "geohash": "tes9958",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 9.14
   },
   {
     "plot_id": "plot_silent_ring_15",
     "farmer_phone": "919876501014",
-    "lat": 19.9398,
-    "lon": 73.8555,
+    "lat": 19.9667,
+    "lon": 73.84463,
+    "geohash": "tes986u",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 6.68
   },
   {
     "plot_id": "plot_silent_ring_16",
     "farmer_phone": "919876501015",
-    "lat": 19.9315,
-    "lon": 73.84,
+    "lat": 19.95688,
+    "lon": 73.84583,
+    "geohash": "tes983h",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 7.4
   },
   {
     "plot_id": "plot_silent_ring_17",
     "farmer_phone": "919876501016",
-    "lat": 19.9107,
-    "lon": 73.8744,
+    "lat": 19.91834,
+    "lon": 73.86534,
+    "geohash": "tes92f5",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 11.84
   },
   {
     "plot_id": "plot_silent_ring_18",
     "farmer_phone": "919876501017",
-    "lat": 20.1,
-    "lon": 73.8226,
+    "lat": 19.94561,
+    "lon": 73.82838,
+    "geohash": "tes92nb",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 7.05
   },
   {
     "plot_id": "plot_silent_ring_19",
     "farmer_phone": "919876501018",
-    "lat": 20.0437,
-    "lon": 73.7195,
+    "lat": 19.95694,
+    "lon": 73.81273,
+    "geohash": "tes3x9h",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 5.11
   },
   {
     "plot_id": "plot_silent_ring_20",
     "farmer_phone": "919876501019",
-    "lat": 19.9928,
-    "lon": 73.8326,
+    "lat": 19.96331,
+    "lon": 73.80008,
+    "geohash": "tes3x65",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 3.96
   },
   {
     "plot_id": "plot_silent_ring_21",
     "farmer_phone": "919876501020",
-    "lat": 19.9522,
-    "lon": 73.7734,
+    "lat": 19.94881,
+    "lon": 73.80014,
+    "geohash": "tes3rre",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 5.53
   },
   {
     "plot_id": "plot_silent_ring_22",
     "farmer_phone": "919876501021",
-    "lat": 20.0817,
-    "lon": 73.7297,
+    "lat": 19.89772,
+    "lon": 73.79403,
+    "geohash": "tes3pnr",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 11.12
   },
   {
     "plot_id": "plot_silent_ring_23",
     "farmer_phone": "919876501022",
-    "lat": 20.1147,
-    "lon": 73.898,
+    "lat": 19.89203,
+    "lon": 73.77655,
+    "geohash": "tes3nv4",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 11.82
   },
   {
     "plot_id": "plot_silent_ring_24",
     "farmer_phone": "919876501023",
-    "lat": 20.0912,
-    "lon": 73.8874,
+    "lat": 19.95226,
+    "lon": 73.77481,
+    "geohash": "tes3wb1",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 5.27
   },
   {
     "plot_id": "plot_silent_ring_25",
     "farmer_phone": "919876501024",
-    "lat": 19.9955,
-    "lon": 73.7327,
+    "lat": 19.89234,
+    "lon": 73.7353,
+    "geohash": "tes3jvk",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 13.02
   },
   {
     "plot_id": "plot_silent_ring_26",
     "farmer_phone": "919876501025",
-    "lat": 19.9076,
-    "lon": 73.6788,
+    "lat": 19.94556,
+    "lon": 73.75493,
+    "geohash": "tes3qqf",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 6.84
   },
   {
     "plot_id": "plot_silent_ring_27",
     "farmer_phone": "919876501026",
-    "lat": 19.8831,
-    "lon": 73.8541,
+    "lat": 19.93222,
+    "lon": 73.72291,
+    "geohash": "tes3mse",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 10.09
   },
   {
     "plot_id": "plot_silent_ring_28",
     "farmer_phone": "919876501027",
-    "lat": 19.9386,
-    "lon": 73.744,
+    "lat": 19.9257,
+    "lon": 73.68683,
+    "geohash": "tes3kg3",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 13.41
   },
   {
     "plot_id": "plot_silent_ring_29",
     "farmer_phone": "919876501028",
-    "lat": 20.0231,
-    "lon": 73.7166,
+    "lat": 19.96294,
+    "lon": 73.72049,
+    "geohash": "tes3td1",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 8.21
   },
   {
     "plot_id": "plot_silent_ring_30",
     "farmer_phone": "919876501029",
-    "lat": 19.9934,
-    "lon": 73.6845,
+    "lat": 19.97461,
+    "lon": 73.73352,
+    "geohash": "tes3tu7",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 6.42
   },
   {
     "plot_id": "plot_silent_ring_31",
     "farmer_phone": "919876501030",
-    "lat": 19.9617,
-    "lon": 73.6835,
+    "lat": 19.97778,
+    "lon": 73.70444,
+    "geohash": "tes3thv",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 9.2
   },
   {
     "plot_id": "plot_silent_ring_32",
     "farmer_phone": "919876501031",
-    "lat": 20.0491,
-    "lon": 73.6749,
+    "lat": 19.99576,
+    "lon": 73.73575,
+    "geohash": "tes3vbh",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 5.66
   },
   {
     "plot_id": "plot_silent_ring_33",
     "farmer_phone": "919876501032",
-    "lat": 19.961,
-    "lon": 73.7368,
+    "lat": 20.00708,
+    "lon": 73.66864,
+    "geohash": "tes3u65",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 12.72
   },
   {
     "plot_id": "plot_silent_ring_34",
     "farmer_phone": "919876501033",
-    "lat": 20.0045,
-    "lon": 73.7041,
+    "lat": 20.01172,
+    "lon": 73.72669,
+    "geohash": "tes3ven",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 6.79
   },
   {
     "plot_id": "plot_silent_ring_35",
     "farmer_phone": "919876501034",
-    "lat": 19.9224,
-    "lon": 73.9001,
+    "lat": 20.01936,
+    "lon": 73.72994,
+    "geohash": "tes3vu2",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 6.72
   },
   {
     "plot_id": "plot_silent_ring_36",
     "farmer_phone": "919876501035",
-    "lat": 20.0035,
-    "lon": 73.7956,
+    "lat": 20.06183,
+    "lon": 73.67797,
+    "geohash": "tes6hs4",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 13.72
   },
   {
     "plot_id": "plot_silent_ring_37",
     "farmer_phone": "919876501036",
-    "lat": 20.081,
-    "lon": 73.859,
+    "lat": 20.04907,
+    "lon": 73.72191,
+    "geohash": "tes6j9f",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 9.13
   },
   {
     "plot_id": "plot_silent_ring_38",
     "farmer_phone": "919876501037",
-    "lat": 19.9629,
-    "lon": 73.7284,
+    "lat": 20.07852,
+    "lon": 73.70353,
+    "geohash": "tes6jpj",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 12.76
   },
   {
     "plot_id": "plot_silent_ring_39",
     "farmer_phone": "919876501038",
-    "lat": 19.9274,
-    "lon": 73.7455,
+    "lat": 20.02511,
+    "lon": 73.76746,
+    "geohash": "tes3yt7",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 3.86
   },
   {
     "plot_id": "plot_silent_ring_40",
     "farmer_phone": "919876501039",
-    "lat": 20.0393,
-    "lon": 73.8371,
+    "lat": 20.05813,
+    "lon": 73.75558,
+    "geohash": "tes6n77",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 7.64
   },
   {
     "plot_id": "plot_silent_ring_41",
     "farmer_phone": "919876501040",
-    "lat": 19.8898,
-    "lon": 73.7537,
+    "lat": 20.1133,
+    "lon": 73.75023,
+    "geohash": "tes6qjx",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 13.54
   },
   {
     "plot_id": "plot_silent_ring_42",
     "farmer_phone": "919876501041",
-    "lat": 19.9961,
-    "lon": 73.7908,
+    "lat": 20.11689,
+    "lon": 73.76707,
+    "geohash": "tes6qw5",
     "district": "Nashik",
-    "inferred_crop": "Tomato"
+    "inferred_crop": "Tomato",
+    "distance_from_hotspot_km": 13.5
   }
 ]

@@ -9,7 +9,11 @@ from ground.services.firestore import firestore_service
 from ground.services.geo import geo_service
 from ground.services.cluster import clustering_service
 
+import os
+
 logger = logging.getLogger("ground.router.observations")
+
+MOCK = os.getenv("MOCK_MODE", "false").lower() == "true"
 
 router = APIRouter(prefix="", tags=["Observations Telemetry"])
 
@@ -39,8 +43,12 @@ async def get_nearby_outbreaks(lat: float = 19.9975, lon: float = 73.7898):
     raw_obs = await firestore_service.get_observations_in_geohashes(search_geohashes)
     clusters = clustering_service.cluster_observations(raw_obs)
 
-    if not clusters:
-        # Return default mock cluster if no live DBSCAN clusters formed yet
-        clusters = [MOCK_OUTBREAK]
+    # "No outbreak" is a real, correct answer. Substituting a fixture here would
+    # travel straight into the public DPG feed and into the 15 km ring alert
+    # fan-out — real WhatsApp warnings about an epidemic that does not exist.
+    # The demo fixture is available under MOCK_MODE, and nowhere else.
+    if not clusters and MOCK:
+        logger.info("MOCK_MODE=true — returning the fixture outbreak cluster.")
+        return [MOCK_OUTBREAK]
 
     return clusters
