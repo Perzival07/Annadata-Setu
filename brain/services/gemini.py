@@ -120,12 +120,21 @@ class GeminiService:
                 passport.inferred_crop,
                 f"disease symptoms management stage {passport.crop_stage_days}",
             )
-            icar_sources = list(set([doc["source"] for doc in rag_docs]))
+            # Only documents actually retrieved from the ingested corpus are
+            # citable. Built-in notes carry source=None: labelling them with a
+            # filename put a reference the farmer cannot check — and which does
+            # not exist — at the bottom of the advisory.
+            icar_sources = sorted({d["source"] for d in rag_docs if d.get("source")})
+            has_corpus = bool(icar_sources)
 
             # 2. Build structured prompt context
             prompt_context = {
                 "plot_passport": passport.model_dump(),
                 "retrieved_icar_docs": [doc["content"] for doc in rag_docs],
+                # Tell the model whether these came from a real document set. The
+                # prompt forbids inventing a dosage; without this it cannot know
+                # that the "retrieved" text is an unattributed built-in note.
+                "retrieved_from_document_corpus": has_corpus,
                 "nearby_outbreaks": nearby_outbreaks or []
             }
 
@@ -166,9 +175,9 @@ class GeminiService:
             if not isinstance(data, dict):
                 raise ValueError(f"Gemini returned {type(data).__name__}, expected a JSON object")
 
-            # Ensure ICAR sources are populated
-            if "sources" not in data or not data["sources"]:
-                data["sources"] = icar_sources
+            # sources[] is the audit trail, so it must reflect what was really
+            # retrieved rather than whatever the model chose to write there.
+            data["sources"] = icar_sources
 
             diagnosis = Diagnosis(**data)
 

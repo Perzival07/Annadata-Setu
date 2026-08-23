@@ -28,9 +28,15 @@ app.include_router(public_api_router)
 
 @app.get("/health")
 def health():
+    # The RAG corpus is reported here because an empty one is otherwise
+    # invisible: retrieval keeps answering, just with nothing citable behind it.
+    from brain.services.rag import rag_service
+
+    rag = rag_service.status()
     return {
-        "status": "ok",
+        "status": "ok" if rag["sources_citable"] else "degraded",
         "service": "as-brain",
         "port": 8002,
-        "version": "1.0.0"
+        "version": "1.0.0",
+        "rag": rag,
     }

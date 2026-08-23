@@ -8,10 +8,16 @@ venv/
 node_modules/
 dist/
 .DS_Store
-brain/data/chroma/*
-!brain/data/chroma/.gitkeep
+# The persisted vector store IS committed (BRAIN.md §5): brain/Dockerfile copies
+# brain/ into the image, so ignoring it meant every clone and every container
+# built shipped without a corpus, and RAG silently degraded to built-in notes.
+# Run `python -m brain.services.ingest` and commit the result.
+
+# Source PDFs stay out — ingest.py is a one-off run locally, and the image only
+# needs the embeddings it produced.
 brain/data/icar_pdfs/*
 !brain/data/icar_pdfs/.gitkeep
+!brain/data/icar_pdfs/README.md
 .claude/*
 
 ground/.localdb/
