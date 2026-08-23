@@ -1,2 +1,3 @@
-google-cloud-firestore==2.15.0
-httpx==0.27.0
+# Gen2 HTTP-triggered function — the runtime needs the framework itself.
+functions-framework==3.5.0
+httpx==0.28.1

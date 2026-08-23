@@ -1,8 +1,13 @@
-fastapi==0.110.0
-uvicorn==0.28.0
-httpx==0.27.0
-pydantic==2.6.4
+# Pinned to the versions this service is actually exercised against. The old
+# pins (google-genai 0.1.1, chromadb 0.4.24) predate the APIs brain/services/
+# calls — types.GenerateContentConfig, Part.from_bytes, a Pydantic
+# response_schema — so the container would fail at request time while the same
+# code worked locally against a newer install.
+fastapi==0.115.6
+uvicorn==0.34.0
+httpx==0.28.1
+pydantic==2.10.4
 python-dotenv==1.0.1
-google-genai==0.1.1
-chromadb==0.4.24
+google-genai==2.19.0
+chromadb==1.5.9
 pypdf==4.1.0

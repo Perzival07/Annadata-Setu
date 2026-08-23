@@ -1,5 +1,3 @@
-version: '3.8'
-
 # Every service builds from the REPO ROOT so that contracts/ — the shared,
 # frozen package all three import — lands inside the image. Scoping the context
 # to a service folder makes `from contracts.models import ...` unresolvable.
@@ -17,7 +15,8 @@ services:
       - BRAIN_URL=http://brain:8002
       - GROUND_URL=http://ground:8003
     env_file:
-      - .env
+      - path: .env
+        required: false
 
   brain:
     build:
@@ -30,7 +29,8 @@ services:
       - MOCK_MODE=true
       - GROUND_URL=http://ground:8003
     env_file:
-      - .env
+      - path: .env
+        required: false
 
   ground:
     build:
@@ -47,4 +47,5 @@ services:
       # Cloud Run leaves this unset and gets real Firestore.
       - FORCE_LOCAL_DB=true
     env_file:
-      - .env
+      - path: .env
+        required: false
