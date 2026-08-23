@@ -41,9 +41,10 @@ if [[ "${MOCK_MODE}" != "true" && -z "${MEDIA_ARCHIVE_BUCKET:-}" ]]; then
   echo "   the photo — Meta's media URLs expire."
 fi
 
-if [[ "${MOCK_MODE}" != "true" && -z "${GOOGLE_MAPS_API_KEY:-}" ]]; then
-  echo "⚠️  GOOGLE_MAPS_API_KEY is not set. Plots whose caller names no district"
-  echo "   fall back to Nashik — its telemetry fallbacks and its outbreak cluster."
+if [[ "${MOCK_MODE}" != "true" && -z "${GOOGLE_MAPS_API_KEY:-}" && "${GEOCODER:-}" != "none" ]]; then
+  echo "ℹ️  GOOGLE_MAPS_API_KEY is not set — reverse geocoding will use"
+  echo "   OpenStreetMap Nominatim, which is free but rate limited to ~1 req/s."
+  echo "   Fine for a demo; set a Maps key for production traffic."
 fi
 
 echo "🚀 Deploying Annadata Setu to Cloud Run (${PROJECT_ID} / ${REGION})..."
@@ -85,7 +86,7 @@ service_url() {
 
 # 1. ground — the leaf service, calls nobody.
 build_and_deploy ground as-ground 8003 \
-  --set-env-vars "MOCK_MODE=${MOCK_MODE},GCP_PROJECT_ID=${PROJECT_ID},GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-}"
+  --set-env-vars "MOCK_MODE=${MOCK_MODE},GCP_PROJECT_ID=${PROJECT_ID},GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY:-},GEOCODER=${GEOCODER:-},NOMINATIM_USER_AGENT=${NOMINATIM_USER_AGENT:-}"
 GROUND_URL=$(service_url as-ground)
 echo "   as-ground  → ${GROUND_URL}"
 

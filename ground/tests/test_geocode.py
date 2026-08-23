@@ -13,11 +13,13 @@ from unittest import mock
 
 from ground.services import geocode as geocode_module
 from ground.services.geocode import (
-    SOURCE_LIVE,
+    SOURCE_GOOGLE,
     SOURCE_MOCK,
+    SOURCE_NOMINATIM,
     GeocodePlace,
     GeocodeService,
     _component,
+    active_provider,
 )
 from ground.services.passport import DEFAULT_DISTRICT, PassportAggregatorService
 
@@ -75,10 +77,57 @@ class ReverseGeocodeTest(unittest.TestCase):
         ctx.__aenter__.return_value = client
         return mock.patch.object(geocode_module.httpx, "AsyncClient", return_value=ctx)
 
-    def test_unconfigured_returns_none_rather_than_guessing(self):
+    def test_no_key_falls_back_to_nominatim_rather_than_giving_up(self):
+        """The whole point: a clone with no credentials still resolves districts.
+
+        Before, an unset key meant every plot was labelled Nashik — including
+        its telemetry fallbacks, its outbreak cluster and, since multi-language,
+        the language the farmer is answered in.
+        """
+        payload = {"address": {"state_district": "Nagpur", "state": "Maharashtra"}}
         with mock.patch.object(geocode_module, "MOCK", False), \
-             mock.patch.object(geocode_module, "API_KEY", None):
+             mock.patch.object(geocode_module, "API_KEY", None), \
+             mock.patch.object(geocode_module, "GEOCODER", ""), self._with_response(payload):
+            place = run(self.svc.reverse(21.1, 79.0))
+        self.assertEqual((place.district, place.state), ("Nagpur", "Maharashtra"))
+        self.assertEqual(place.source, SOURCE_NOMINATIM)
+
+    def test_geocoding_can_be_switched_off_entirely(self):
+        with mock.patch.object(geocode_module, "MOCK", False), \
+             mock.patch.object(geocode_module, "GEOCODER", "none"):
             self.assertIsNone(run(self.svc.reverse(21.1, 79.0)))
+
+    def test_a_key_upgrades_to_google_automatically(self):
+        with mock.patch.object(geocode_module, "API_KEY", "k"), \
+             mock.patch.object(geocode_module, "GEOCODER", ""):
+            self.assertEqual(active_provider(), "google")
+        with mock.patch.object(geocode_module, "API_KEY", None), \
+             mock.patch.object(geocode_module, "GEOCODER", ""):
+            self.assertEqual(active_provider(), "nominatim")
+
+    def test_forcing_google_without_a_key_disables_rather_than_silently_using_osm(self):
+        """An operator who asked for Google should not get a different provider."""
+        with mock.patch.object(geocode_module, "API_KEY", None), \
+             mock.patch.object(geocode_module, "GEOCODER", "google"):
+            self.assertIsNone(active_provider())
+
+    def test_nominatim_result_without_a_district_returns_none(self):
+        payload = {"address": {"state": "Maharashtra"}}
+        with mock.patch.object(geocode_module, "MOCK", False), \
+             mock.patch.object(geocode_module, "GEOCODER", "nominatim"), self._with_response(payload):
+            self.assertIsNone(run(self.svc.reverse(21.1, 79.0)))
+
+    def test_nominatim_error_payload_returns_none(self):
+        with mock.patch.object(geocode_module, "MOCK", False), \
+             mock.patch.object(geocode_module, "GEOCODER", "nominatim"), \
+             self._with_response({"error": "Unable to geocode"}):
+            self.assertIsNone(run(self.svc.reverse(0.0, 0.0)))
+
+    def test_nominatim_falls_back_to_county_when_there_is_no_state_district(self):
+        payload = {"address": {"county": "Sinnar", "state": "Maharashtra"}}
+        with mock.patch.object(geocode_module, "MOCK", False), \
+             mock.patch.object(geocode_module, "GEOCODER", "nominatim"), self._with_response(payload):
+            self.assertEqual(run(self.svc.reverse(19.8, 74.0)).district, "Sinnar")
 
     def test_resolves_district_and_state(self):
         payload = _ok([
@@ -86,40 +135,45 @@ class ReverseGeocodeTest(unittest.TestCase):
             {"long_name": "Maharashtra", "types": ["administrative_area_level_1"]},
         ])
         with mock.patch.object(geocode_module, "MOCK", False), \
-             mock.patch.object(geocode_module, "API_KEY", "k"), self._with_response(payload):
+             mock.patch.object(geocode_module, "API_KEY", "k"), \
+             mock.patch.object(geocode_module, "GEOCODER", "google"), self._with_response(payload):
             place = run(self.svc.reverse(21.1, 79.0))
         self.assertEqual((place.district, place.state), ("Nagpur", "Maharashtra"))
-        self.assertEqual(place.source, SOURCE_LIVE)
+        self.assertEqual(place.source, SOURCE_GOOGLE)
 
     def test_mock_mode_does_not_credit_the_api_it_never_called(self):
         """data_sources is the DPG audit trail — MOCK must not name a live API."""
         with mock.patch.object(geocode_module, "MOCK", True):
             place = run(self.svc.reverse(21.1, 79.0))
         self.assertEqual(place.source, SOURCE_MOCK)
-        self.assertNotEqual(place.source, SOURCE_LIVE)
+        self.assertNotEqual(place.source, SOURCE_GOOGLE)
 
     def test_zero_results_returns_none(self):
         with mock.patch.object(geocode_module, "MOCK", False), \
              mock.patch.object(geocode_module, "API_KEY", "k"), \
+             mock.patch.object(geocode_module, "GEOCODER", "google"), \
              self._with_response({"status": "ZERO_RESULTS", "results": []}):
             self.assertIsNone(run(self.svc.reverse(0.0, 0.0)))
 
     def test_api_error_status_returns_none(self):
         payload = {"status": "REQUEST_DENIED", "error_message": "key not authorised"}
         with mock.patch.object(geocode_module, "MOCK", False), \
-             mock.patch.object(geocode_module, "API_KEY", "k"), self._with_response(payload):
+             mock.patch.object(geocode_module, "API_KEY", "k"), \
+             mock.patch.object(geocode_module, "GEOCODER", "google"), self._with_response(payload):
             self.assertIsNone(run(self.svc.reverse(21.1, 79.0)))
 
     def test_result_without_district_returns_none(self):
         """A state alone is not enough — everything downstream keys on district."""
         payload = _ok([{"long_name": "Maharashtra", "types": ["administrative_area_level_1"]}])
         with mock.patch.object(geocode_module, "MOCK", False), \
-             mock.patch.object(geocode_module, "API_KEY", "k"), self._with_response(payload):
+             mock.patch.object(geocode_module, "API_KEY", "k"), \
+             mock.patch.object(geocode_module, "GEOCODER", "google"), self._with_response(payload):
             self.assertIsNone(run(self.svc.reverse(21.1, 79.0)))
 
     def test_network_failure_returns_none(self):
         with mock.patch.object(geocode_module, "MOCK", False), \
              mock.patch.object(geocode_module, "API_KEY", "k"), \
+             mock.patch.object(geocode_module, "GEOCODER", "google"), \
              mock.patch.object(geocode_module.httpx, "AsyncClient", side_effect=OSError("no route")):
             self.assertIsNone(run(self.svc.reverse(21.1, 79.0)))
 
@@ -145,11 +199,11 @@ class PlaceResolutionTest(unittest.TestCase):
     def test_pin_decides_when_no_district_supplied(self):
         with mock.patch(
             "ground.services.passport.geocode_service.reverse",
-            new=mock.AsyncMock(return_value=GeocodePlace("Nagpur", "Maharashtra", SOURCE_LIVE)),
+            new=mock.AsyncMock(return_value=GeocodePlace("Nagpur", "Maharashtra", SOURCE_GOOGLE)),
         ):
             district, state, source = run(self.agg._resolve_place(21.1, 79.0, None, None))
         self.assertEqual((district, state), ("Nagpur", "Maharashtra"))
-        self.assertEqual(source, SOURCE_LIVE, "a looked-up district is recorded as provenance")
+        self.assertEqual(source, SOURCE_GOOGLE, "a looked-up district is recorded as provenance")
 
     def test_provenance_label_comes_from_whatever_resolved_it(self):
         """A mocked lookup must be credited to the fixture, not to Google."""

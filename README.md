@@ -104,6 +104,72 @@ The ChromaDB store is committed, so this is only needed after changing the PDFs:
   ground.tests.test_cluster ground.tests.test_geocode
 ```
 
+## Languages
+
+Farmer-facing output is available in **Marathi, Hindi, Bengali and English**.
+
+| | Script | Digits | Voice |
+|---|---|---|---|
+| `mr` मराठी | Devanagari | `३४०` | `mr-IN` |
+| `hi` हिन्दी | Devanagari | `३४०` | `hi-IN` |
+| `bn` বাংলা | Bengali | `৩৪০` | `bn-IN` |
+| `en` English | Latin | `340` | `en-IN` |
+
+**How a farmer's language is chosen** — four layers, strongest evidence first,
+each degrading to the next rather than to a guess:
+
+1. **They chose it.** Texting `hindi`, `3`, `বাংলা` or `language` (for the menu)
+   sets it permanently. A decision, so nothing below overrides it.
+2. **Their own message.** Cloud Speech reports which language a voice note was
+   in; a text message is read by script. Devanagari is ambiguous between Hindi
+   and Marathi, so that case asks Cloud Translate rather than picking one —
+   answering a Marathi farmer in Hindi is a failure neither side can see.
+3. **The plot's state**, from reverse geocoding (`West Bengal → bn`). The
+   weakest signal, which is why anything the farmer told us outranks it. Needs
+   no API key — see the next section.
+4. **Marathi**, the demo district's language and the historical default.
+
+**The rule that makes it safe.** The voice note is synthesised by that
+language's TTS voice, and text in a script it does not read comes out as noise.
+So every spoken script is checked against its target language and anything
+foreign is stripped: Latin is foreign to Marathi, Hindi and Bengali; Devanagari
+and Bengali are foreign to English. Where a value cannot be rendered safely it
+is **omitted from the voice note** — the WhatsApp text still carries the exact
+disease name and dose, which is what the farmer needs at the shop.
+
+Adding a language is a data change: one row in `contracts/languages.py` and its
+strings in `channel/services/phrasebook.py`. A completeness test fails if any
+key, unit or disease name is missing, and another fails if a phrase uses a
+script its own voice cannot read.
+
+The officer dashboard and the public DPG feed stay English.
+
+## Reverse geocoding (no key required)
+
+A dropped pin becomes a real district, which selects the telemetry fallbacks,
+the outbreak cluster, and the farmer's language. Two providers:
+
+| `GEOCODER` | Uses | Needs |
+|---|---|---|
+| unset (default) | Google if `GOOGLE_MAPS_API_KEY` is set, else Nominatim | nothing |
+| `nominatim` | OpenStreetMap Nominatim | nothing |
+| `google` | Google Maps Geocoding | an API key + billing |
+| `none` | no lookups; callers keep whatever district they passed | — |
+
+**Nominatim is the default because the failure mode of requiring a key was the
+bug this feature exists to fix**: with no key, every farmer was labelled Nashik.
+It needs no key, no billing and no signup, and returns the Indian
+`state_district` and `state` names this project already keys on — verified
+against Nashik, Nagpur, Kolkata, Lucknow and Kochi.
+
+It is rate limited to roughly one request per second, which the client honours
+along with the identifying `User-Agent` their policy requires. Real volume is
+far below that, since passports are cached by geohash for 7 days. Set a Maps key
+for production traffic; it is picked up automatically.
+
+Attribution (ODbL) travels in `PlotPassport.data_sources`, so the DPG feed
+carries it to anyone consuming the data.
+
 ## Gemini tool use
 
 A diagnosis runs in two phases, because the Gemini API will not accept `tools`
@@ -134,8 +200,9 @@ Each is off unless configured, and each degrades to the behaviour that preceded 
 | Setting | Off means |
 |---|---|
 | `ENABLE_GEMINI_TOOLS` | Diagnosis runs on pre-fetched context only |
-| `GOOGLE_MAPS_API_KEY` | A plot whose caller names no district is labelled Nashik |
+| `GOOGLE_MAPS_API_KEY` | Reverse geocoding still works, free, via OpenStreetMap Nominatim |
 | `ENABLE_TRANSLATION` | The fallback voice script drops `action_text` rather than speaking it |
 | `MEDIA_ARCHIVE_BUCKET` | Escalated photos are not retained for the review we promise |
+| `ENABLE_TRANSLATION` | Voice notes still work in all four languages; the fallback template drops `action_text`, and a Devanagari message cannot be told apart as Hindi or Marathi |
 
 `/health` on each service reports which of these are actually live.
