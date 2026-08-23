@@ -166,8 +166,12 @@ each degrading to the next rather than to a guess:
    and the plot's state is genuinely unknown.
 
 On the web app there is no phone number and so no stored preference: the
-**location picker decides**, which is layers 3 and 4 alone. Each preset shows
-the language it will produce before you submit.
+**captured location decides**, which is layers 3 and 4 alone. The page asks the
+browser for the device's position, resolves it through `GET /place` on ground,
+and shows the district and the resulting language before the farmer submits —
+so nobody discovers which language they are getting only when the voice note
+plays. Manual coordinate entry stays available for when permission is denied or
+the fix fails.
 
 **The rule that makes it safe.** The voice note is synthesised by that
 language's TTS voice, and text in a script it does not read comes out as noise.

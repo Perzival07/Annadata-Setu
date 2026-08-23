@@ -29,3 +29,12 @@ export async function fetchOutbreaks() {
   if (!res.ok) throw new Error('Outbreaks fetch failed');
   return await res.json();
 }
+
+
+export async function fetchPlace(lat, lon) {
+  // Reverse geocode only — deliberately not /plot-passport, which would run
+  // satellite, soil and weather lookups to answer "which district is this".
+  const res = await fetch(`${GROUND_URL}/place?lat=${lat}&lon=${lon}`);
+  if (!res.ok) throw new Error('Place lookup failed');
+  return await res.json();
+}

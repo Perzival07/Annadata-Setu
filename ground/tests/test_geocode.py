@@ -228,3 +228,56 @@ class PlaceResolutionTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PlaceEndpointTest(unittest.TestCase):
+    """GET /place — the lookup the web app's location capture calls.
+
+    It exists so the page can name the district a captured GPS fix landed in
+    before the farmer commits to a diagnosis. Going through /plot-passport for
+    that would run Earth Engine, SoilGrids and a weather forecast to answer a
+    question none of them are involved in.
+    """
+
+    def setUp(self):
+        from fastapi.testclient import TestClient
+        from ground.main import app
+
+        self.client = TestClient(app)
+
+    def _get(self, lat, lon):
+        return self.client.get(f"/place?lat={lat}&lon={lon}").json()
+
+    def test_resolved_pin_returns_district_state_and_provenance(self):
+        place = GeocodePlace("Bankura", "West Bengal", SOURCE_NOMINATIM)
+        with mock.patch(
+            "ground.routers.passport.geocode_service.reverse",
+            new=mock.AsyncMock(return_value=place),
+        ):
+            body = self._get(23.2324, 87.069)
+        self.assertTrue(body["resolved"])
+        self.assertEqual((body["district"], body["state"]), ("Bankura", "West Bengal"))
+        self.assertEqual(body["source"], SOURCE_NOMINATIM)
+
+    def test_unresolvable_pin_says_so_rather_than_guessing(self):
+        """Offshore, or geocoding down. The caller must not show a guess."""
+        with mock.patch(
+            "ground.routers.passport.geocode_service.reverse",
+            new=mock.AsyncMock(return_value=None),
+        ):
+            body = self._get(0.0, 0.0)
+        self.assertFalse(body["resolved"])
+        self.assertIsNone(body["district"])
+        self.assertIsNone(body["state"])
+
+    def test_it_does_not_build_a_passport(self):
+        """The whole point is that it is cheap — no telemetry may be fetched."""
+        with mock.patch(
+            "ground.routers.passport.geocode_service.reverse",
+            new=mock.AsyncMock(return_value=GeocodePlace("Nashik", "Maharashtra", SOURCE_MOCK)),
+        ), mock.patch(
+            "ground.routers.passport.passport_aggregator_service.build_plot_passport",
+            new=mock.AsyncMock(),
+        ) as build:
+            self._get(19.9975, 73.7898)
+        build.assert_not_called()
