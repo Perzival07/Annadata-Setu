@@ -17,7 +17,7 @@ import os
 import re
 from typing import Dict, List
 
-from brain.services.embeddings import EMBEDDER_ID, get_embedding_function
+from brain.services.embeddings import EMBEDDER_ID, model_is_baked
 
 logger = logging.getLogger("brain.ingest")
 
@@ -111,14 +111,8 @@ def ingest_pdfs(pdf_dir: str = PDF_DIR, chroma_dir: str = CHROMA_DIR, reset: boo
         )
         return 0
 
-    embed_fn = get_embedding_function()
-    if embed_fn is None:
-        logger.error(
-            "Cannot embed without GEMINI_API_KEY. Refusing to build the store with "
-            "ChromaDB's default model — retrieval would then have to use that same "
-            "model, which is not what BRAIN.md §8 specifies and pulls 167 MB at runtime."
-        )
-        return 0
+    if not model_is_baked():
+        logger.info("Embedding model not cached yet; it will be downloaded once (~79 MB).")
 
     os.makedirs(chroma_dir, exist_ok=True)
     client = chromadb.PersistentClient(path=chroma_dir)
@@ -132,7 +126,6 @@ def ingest_pdfs(pdf_dir: str = PDF_DIR, chroma_dir: str = CHROMA_DIR, reset: boo
     # refuse to query vectors it cannot compare against.
     collection = client.get_or_create_collection(
         name=COLLECTION_NAME,
-        embedding_function=embed_fn,
         metadata={"embedder": EMBEDDER_ID},
     )
 

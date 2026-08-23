@@ -1,71 +1,68 @@
-"""Embedding function shared by ingest and retrieval.
+"""Embedding model shared by ingest and retrieval.
 
-BRAIN.md §8 specifies `text-embedding-004`. Left to its default, ChromaDB
-instead downloads all-MiniLM-L6-v2 as ONNX from S3 on first use — 79 MB on the
-wire, 167 MB unpacked — and it does that lazily, so on Cloud Run it lands in the
-first request after a cold start, over whatever network the demo is on. Nothing
-in the image ships that model, so it would be fetched again on every new
-instance.
+ChromaDB's built-in all-MiniLM-L6-v2 runs locally with no API key, which is why
+it is used here rather than the text-embedding-004 named in BRAIN.md §8: the
+demo has to work on venue wifi without depending on an embeddings API being
+reachable per query.
 
-The embedder used to build a collection and the one used to query it MUST match:
-vectors from two different models are not comparable, and a mismatch does not
-error — it silently returns the wrong chunks. Collections are therefore stamped
-with the embedder that built them, and a mismatch falls back to built-in notes
-rather than serving nonsense.
+The catch is that ChromaDB fetches the model lazily from S3 on first use —
+79 MB on the wire, ~167 MB unpacked. Left alone, that download happens inside
+the first request after a Cloud Run cold start, and repeats on every new
+instance. brain/Dockerfile therefore warms it at build time so it ships in the
+image; `model_is_baked()` reports whether that actually happened.
+
+The embedder that builds a collection and the one that queries it MUST match.
+Vectors from two models are not comparable, and querying across them does not
+error — it returns plausible-looking wrong chunks. Collections are stamped with
+EMBEDDER_ID and a mismatch disables retrieval rather than serving nonsense.
 """
 
 import logging
 import os
-from typing import List, Optional
 
 logger = logging.getLogger("brain.embeddings")
 
-EMBED_MODEL = "text-embedding-004"
-EMBEDDER_ID = f"google:{EMBED_MODEL}"
+MODEL_NAME = "all-MiniLM-L6-v2"
+EMBEDDER_ID = f"chroma:{MODEL_NAME}"
 
 
-class GeminiEmbeddingFunction:
-    """ChromaDB embedding function backed by the Gemini embeddings API."""
-
-    def __init__(self, api_key: str, model: str = EMBED_MODEL):
-        from google import genai
-        self._client = genai.Client(api_key=api_key)
-        self._model = model
-
-    @staticmethod
-    def name() -> str:
-        return "annadata_gemini_text_embedding_004"
-
-    def __call__(self, input) -> List[List[float]]:
-        if isinstance(input, str):
-            input = [input]
-        res = self._client.models.embed_content(model=self._model, contents=list(input))
-        return [list(e.values) for e in res.embeddings]
-
-    # Chroma persists and replays this to rebuild the function on load.
-    def get_config(self) -> dict:
-        return {"model": self._model}
-
-    @classmethod
-    def build_from_config(cls, config: dict) -> "GeminiEmbeddingFunction":
-        return cls(api_key=os.getenv("GEMINI_API_KEY", ""), model=config.get("model", EMBED_MODEL))
-
-
-def get_embedding_function() -> Optional[GeminiEmbeddingFunction]:
-    """The configured embedder, or None when it cannot be built.
-
-    None means "do not query the vector store" — never "quietly use a different
-    model", which is what ChromaDB's default would do.
-    """
-    api_key = os.getenv("GEMINI_API_KEY")
-    if not api_key:
-        logger.warning(
-            f"GEMINI_API_KEY is not set, so {EMBED_MODEL} embeddings are unavailable. "
-            "Vector retrieval is disabled; built-in notes will be used."
-        )
-        return None
+def model_cache_path() -> str:
+    """Where ChromaDB keeps the ONNX model for this process."""
     try:
-        return GeminiEmbeddingFunction(api_key=api_key)
+        from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
+        return ONNXMiniLM_L6_V2.DOWNLOAD_PATH
+    except Exception:
+        return os.path.expanduser(f"~/.cache/chroma/onnx_models/{MODEL_NAME}")
+
+
+def model_is_baked() -> bool:
+    """True when the model is already on disk, so no request will trigger a download."""
+    path = model_cache_path()
+    return os.path.isdir(path) and any(
+        os.path.exists(os.path.join(path, f)) for f in ("onnx", "onnx.tar.gz")
+    )
+
+
+def warm_model() -> bool:
+    """Download and unpack the model. Called from the Dockerfile at build time."""
+    try:
+        from chromadb.utils.embedding_functions import ONNXMiniLM_L6_V2
+        ONNXMiniLM_L6_V2()(["warm up the embedding model"])
+        logger.info(f"Embedding model ready at {model_cache_path()}")
+        return True
     except Exception as e:
-        logger.warning(f"Could not build the {EMBED_MODEL} embedding function: {e}")
-        return None
+        logger.error(f"Could not warm the embedding model: {e}")
+        return False
+
+
+def embedder_status() -> dict:
+    return {
+        "embedder": EMBEDDER_ID,
+        "model_cached": model_is_baked(),
+        "cache_path": model_cache_path(),
+    }
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+    raise SystemExit(0 if warm_model() else 1)

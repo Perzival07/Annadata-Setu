@@ -4,10 +4,13 @@ Put the agronomic reference PDFs here — the ICAR Package of Practices document
 for your crop and district — then build the vector store:
 
 ```bash
-export GEMINI_API_KEY=...          # embeddings use text-embedding-004
 python -m brain.services.ingest --reset
 git add brain/data/chroma && git commit -m "[P2] ingest reference corpus"
 ```
+
+No API key is required — embeddings use ChromaDB's local `all-MiniLM-L6-v2`,
+baked into the image by `brain/Dockerfile`. See [`SOURCES.md`](./SOURCES.md) for
+what is currently indexed and where it came from.
 
 The PDFs themselves are gitignored and excluded from the image. Only the
 resulting `brain/data/chroma/` store ships.

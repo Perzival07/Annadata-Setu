@@ -8,6 +8,13 @@ WORKDIR /app
 COPY brain/requirements.txt ./brain/requirements.txt
 RUN pip install --no-cache-dir -r brain/requirements.txt
 
+# Bake the embedding model into the image. ChromaDB otherwise fetches it from
+# S3 lazily — 79 MB on the wire, ~167 MB unpacked — which would land inside the
+# first request after a Cloud Run cold start, on whatever network the demo is
+# on, and repeat for every new instance.
+COPY brain/services/embeddings.py ./brain/services/embeddings.py
+RUN python -m brain.services.embeddings
+
 COPY contracts/ ./contracts/
 # Carries prompts/ and the persisted ChromaDB store in data/chroma/. The ICAR
 # source PDFs are excluded by .dockerignore — ingest.py is a one-off you run

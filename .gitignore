@@ -18,6 +18,7 @@ dist/
 brain/data/icar_pdfs/*
 !brain/data/icar_pdfs/.gitkeep
 !brain/data/icar_pdfs/README.md
+!brain/data/icar_pdfs/SOURCES.md
 .claude/*
 
 ground/.localdb/

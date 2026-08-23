@@ -2,7 +2,7 @@ import logging
 import os
 from typing import Dict, List, Optional
 
-from brain.services.embeddings import EMBEDDER_ID, get_embedding_function
+from brain.services.embeddings import EMBEDDER_ID, model_is_baked
 
 logger = logging.getLogger("brain.rag")
 
@@ -61,17 +61,8 @@ class RAGService:
                 )
                 return
             client = chromadb.PersistentClient(path=self.chroma_dir)
-            embed_fn = get_embedding_function()
-            if embed_fn is None:
-                logger.warning(
-                    "No embedding function available — vector retrieval disabled, "
-                    "built-in notes only."
-                )
-                return
-
             collection = client.get_or_create_collection(
                 name=COLLECTION_NAME,
-                embedding_function=embed_fn,
                 metadata={"embedder": EMBEDDER_ID},
             )
 
@@ -134,6 +125,7 @@ class RAGService:
             "chroma_dir": self.chroma_dir,
             "collection": COLLECTION_NAME,
             "embedder": EMBEDDER_ID,
+            "model_cached": model_is_baked(),
             "indexed_chunks": size,
             "retrieval_mode": "corpus" if size else "builtin_only",
             "sources_citable": bool(size),
